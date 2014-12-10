@@ -203,7 +203,7 @@ function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     for j in 1:length(cyc)
         r += gcd(length(cyc[j])-1,exp)
     end
-    c = Array(Array{Int,1},0)
+    c = Array(Array{T,1},0)
     for j in 1:length(cyc)
         v = cyc[j]
         n = length(v)
