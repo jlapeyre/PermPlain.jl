@@ -291,12 +291,12 @@ end
 # somewhat inefficient
 function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)  
 #function cycstoperm(cycs, pmax=0)  # somewhat inefficient
-    length(cycs) == 0 && return [1:pmax]
+    length(cycs) == 0 && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
     cmax = maximum(cmaxes)  # must be a faster way
-    perm = [1: (pmax > cmax ? pmax : cmax)]
+    perm = [one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax))]
     for c in cycs
-        for i in 2:length(c)
+        for i in convert(T,2):convert(T,length(c))
             perm[c[i-1]] = c[i]
         end
         perm[c[end]] = c[1]
