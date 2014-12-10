@@ -349,13 +349,17 @@ function cycleprint(io::IO, v::Array)
 end
 
 function permarrprint(io::IO, v::Array)
-    pd = ndigits(maximum(v))
-    len = length(v)
-    print(io,"( ")
-    for k in v
-        print(io,rpad(k,pd,' ')," ")
+    if isempty(v)
+        print(io, "()")
+    else
+        pd = ndigits(maximum(v))
+        len = length(v)
+        print(io,"( ")
+        for k in v
+            print(io,rpad(k,pd,' ')," ")
+        end
+        print(io,")")
     end
-    print(io,")")
 end
 
 cycleprint(v::Array) = cycleprint(STDOUT,v)
