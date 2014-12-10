@@ -42,11 +42,10 @@ function cyclelengths{T<:Real}(p::AbstractVector{T})
     return lengths
 end
 
+cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
+
 # compute the cycletype property from PLIST
-function cycletype{T<:Real}(p::AbstractVector{T})
-    clens = cyclelengths(p)
-    return counter(clens)
-end
+cycletype{T<:Real}(p::AbstractVector{T}) = counter(cyclelengths(p))
 
 # Compute cyclic decomposition (PCYC) from input permutation list (PLIST).
 # This builds a cycle list in the canonical order.
@@ -73,8 +72,8 @@ end
 # Convert cyclic decomposition (PCYC) to canonical form
 # canonical order used by gap, Mma, and Arndt thesis
 # Note that Arndt uses a different order internally to store the cycles as a single list.
-function canoncycles(cycs)
-    ocycs = Array(Array{Int,1},0) # TODO: allow copying input type!
+function canoncycles{T<:Real}(cycs::AbstractArray{Array{T,1},1})
+    ocycs = Array(Array{T,1},0) # TODO: allow copying input type!
     for cyc in cycs
         push!(ocycs,circshift(cyc,-indmin(cyc)+1))
     end
