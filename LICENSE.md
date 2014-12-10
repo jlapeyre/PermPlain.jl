@@ -1,4 +1,5 @@
 The PermPlain.jl package is licensed under the MIT "Expat" License:
+Some of the code is taken from other sources, with licenses noted below.
 
 > Copyright (c) 2014: John Lapeyre.
 >
@@ -20,3 +21,10 @@ The PermPlain.jl package is licensed under the MIT "Expat" License:
 > CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 > TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 > SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Some code is based on code from Permutations.jl, mostly by Scheinerman.
+
+Some routines are based on code in the pari library and the gap program.
+Both pari and gap are under the GNU General Public License.
+
