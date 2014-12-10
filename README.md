@@ -30,3 +30,10 @@ Usage:
 p = randperm(10)     # create permutation with Base.randperm
 c = permcycles(p)    # compute cyclic decompostion of p
 ```
+
+## Some things to know
+
+* Cycles of length 1 are omitted from the disjoing cycle representation
+
+* The canonical order is, smallest element in a cycle is written first,
+  cycles are sorted by increasing value of the first element.
