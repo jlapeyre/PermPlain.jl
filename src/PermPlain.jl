@@ -1,6 +1,7 @@
 module PermPlain
 
 using DataStructures.counter
+import Base: isperm
 
 # Permutations implemented without defining new types.
 # The types, PermList, PermCycs, use this code.
@@ -11,7 +12,7 @@ using DataStructures.counter
 #  PCYC   means  permutation stored as cyclic decomposition
 
 export permcycles, cyclelengths, permsgn, permorder,
-       permcompose, permcompose!, permpower, permlisttomatrix,
+       permcompose, permcompose!, permpower, permtomat, mattoperm,
        permtotrans, cycletype, permlistisequal, isperm,
        canoncycles, cycstoperm, cycleprint, permarrprint,
        cyc_pow_perm, permcommute, permdistance, permordercyc
@@ -87,10 +88,7 @@ permsgn_from_lengths(lens) = (-1)^(length(lens)+sum(lens))
 
 # return the signature (also called sign) of the permutation
 # from permutation list (PLIST)
-function permsgn{T<:Real}(p::AbstractVector{T})
-    clengths = cyclelengths(p)
-    return permsgn_from_lengths(clengths)
-end
+permsgn{T<:Real}(p::AbstractVector{T}) =  permsgn_from_lengths(cyclelengths(p))
 
 function permorder_from_lengths(clengths)
     result = 1
@@ -258,10 +256,46 @@ end
 
 # Convert PLIST to PMAT
 # convert permutation to matrix operator
-function permlisttomatrix{T<:Real}(p::AbstractVector{T}, sparse::Bool = false)
+function permtomat{T<:Real}(p::AbstractVector{T}, sparse::Bool = false)
     n::T = length(p)
     A = sparse ? speye(T,n) : eye(T,n)
     return A[p,:]
+end
+
+# convert matrix to perm in list form
+function mattoperm{T<:Real}(m::AbstractArray{T,2})
+    n = size(m)[1]
+    p = Array(T,n)
+    for i in 1:n
+        for j in 1:n
+            if m[j,i] != 1
+                continue
+            end
+            p[j] = i
+        end
+    end
+    p
+end
+
+# is m a permutation matrix
+function isperm{T<:Real}(m::AbstractArray{T,2})
+    sx,sy = size(m)
+    sx == sy || return false
+    z = zero(T)
+    o = one(T)
+    seen = falses(sx)
+    for i in 1:sx
+        for j in 1:sx
+            val = m[j,i]
+            if val == o
+                seen[j] == true && return false
+                seen[j] = true
+            elseif val != z
+                return false
+            end
+        end
+    end
+    true
 end
 
 # Broken
@@ -284,13 +318,10 @@ function permtotrans{T<:Real}(p::AbstractVector{T})
     return transes
 end
 
-# Can't get a signature to match, so use generic for now
-#function cycstoperm{T<:Real}(cycs::AbstractArray{AbstractVector{T},1})
-# The input cycles must be disjoint.
 
+# The input cycles must be disjoint.
 # somewhat inefficient
 function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)  
-#function cycstoperm(cycs, pmax=0)  # somewhat inefficient
     length(cycs) == 0 && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
     cmax = maximum(cmaxes)  # must be a faster way
@@ -306,7 +337,7 @@ function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 
 end
 
 function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
-    seen = counter(eltype(cycs[1]))
+    seen = counter(eltype(cycs[1])) # inefficient
     for c in cycs
         for i in c
             push!(seen,i) == 1 || return false
@@ -318,18 +349,19 @@ end
 function permlistisequal{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
     lp = length(p)
     lq = length(q)
+    s = one(T)
     if lp < lq
-        for i in 1:lp
+        for i in s:lp
             p[i] == q[i] || return false
         end
-        for i in lp+1:lq
+        for i in lp+s:lq
             q[i] == i || return false
         end
     else  # could factor code with refs, prbly not worth the trouble
-        for i in 1:lq
+        for i in s:lq
             p[i] == q[i] || return false
         end
-        for i in lq+1:lp
+        for i in lq+s:lp
             p[i] == i || return false
         end
     end
