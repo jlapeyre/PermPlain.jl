@@ -15,7 +15,8 @@ export permcycles, cyclelengths, permsgn, permorder,
        permcompose, permcompose!, permpower, permtomat, mattoperm,
        permtotrans, cycletype, permlistisequal, isperm,
        canoncycles, cycstoperm, cycleprint, permarrprint,
-       cyc_pow_perm, permcommute, permdistance, permordercyc
+       cyc_pow_perm, permcommute, permdistance, permordercyc,
+       ltpermlist
 
 # Get the lengths of the cycles in cyclic decomposition
 # from input permutation list (PLIST).
@@ -89,6 +90,8 @@ permsgn_from_lengths(lens) = (-1)^(length(lens)+sum(lens))
 # return the signature (also called sign) of the permutation
 # from permutation list (PLIST)
 permsgn{T<:Real}(p::AbstractVector{T}) =  permsgn_from_lengths(cyclelengths(p))
+# from PCYC
+permsgn{T<:Real}(c::AbstractArray{Array{T,1},1}) = permsgn_from_lengths(cyclelengths(c))
 
 function permorder_from_lengths(clengths)
     result = 1
@@ -298,26 +301,22 @@ function isperm{T<:Real}(m::AbstractArray{T,2})
     true
 end
 
-# Broken
-# Just work directly on list form,
-# convert permutation to equivalent array of transpositions.
-# But we have to choose storage.
-function permtotrans{T<:Real}(p::AbstractVector{T})
-    cycs = permcycles(p)
-    transes = Array(Array{T,1},0)    
-    for cyc in cycs
-        len = length(cyc)
-        if len == 2
-            push!(transes,cyc)
-        elseif len > 2
-            for i in 2:len
-                push!(transes, [cyc[1],cyc[i]])
-            end
+function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
+    seen = counter(eltype(cycs[1])) # inefficient
+    for c in cycs
+        for i in c
+            push!(seen,i) == 1 || return false
         end
     end
-    return transes
+    return true
 end
 
+function isid{T<:Real}(p::AbstractVector{T})
+    for i in 1:length(p)
+        i == p[i] || return false
+    end
+    return true
+end
 
 # The input cycles must be disjoint.
 # somewhat inefficient
@@ -334,16 +333,6 @@ function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 
     end
     perm[cmax+1:pmax] = [cmax+1:pmax]
     return perm
-end
-
-function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
-    seen = counter(eltype(cycs[1])) # inefficient
-    for c in cycs
-        for i in c
-            push!(seen,i) == 1 || return false
-        end
-    end
-    return true
 end
 
 function permlistisequal{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
@@ -366,6 +355,128 @@ function permlistisequal{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVect
         end
     end
     return true
+end
+
+# is p < q with lexicographical ordering ?
+for (f,ret) in ((:ltpermlist, :false), (:lepermlist, :true))
+    @eval begin
+function ($f){T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
+    o = one(T)
+    lp = length(p)
+    lq = length(q)
+    if ( lp < lq )
+        for k in o:lp
+            if q[k] != p[k]
+                return p[k] < q[k] ? true : false
+            end
+        end
+        for k in lp+o:lq
+            q[k] != k && return false
+        end
+    else
+        for k in o:lq
+            if q[k] != p[k]
+                return p[k] < q[k] ? true : false
+            end
+        end
+        for k in lq+o:lp
+            p[k] != k && return false
+        end
+    end
+    return $ret
+end
+end
+end
+        
+# preimage of k under p
+function preimage{T<:Real}(p::AbstractVector{T}, k::Int)
+    k > length(p) && return k
+    for i in 1:length(p)
+        if p[i] == k
+            return i
+        end
+    end
+    error("Can't find inverse image of $k.")
+end
+
+# List of points mapped to same point by p and q
+#function same(pin::PermList, qin::PermList)
+function same{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
+    lp = length(p)
+    lq = length(q)
+    d = Array(eltype(p),0)
+    if lp < lq
+        for i in 1:lp
+            p[i] == q[i] ? push!(d,p[i]) : nothing
+        end
+        for i in lp+1:lq
+            q[i] == i ? push!(d,q[i]) : nothing
+        end
+    else  # could factor code with refs, prbly not worth the trouble
+        for i in 1:lq
+            p[i] == q[i] ? push!(d,p[i]) : nothing
+        end
+        for i in lq+1:lp
+            p[i] != i ? push!(d,p[i]) : nothing
+        end
+    end
+    return d
+end
+
+# The return type depends on value of input. How to get around this ?
+# There is no integer Inf.
+# agrees with gap (except definition,use of inifinity is different)
+function leastmoved{T<:Real}(p::AbstractVector{T})
+    lp = length(p)
+    lm = lp+1
+    for i in 1:lp
+        k = p[i]
+        k == i ? nothing :
+           k < lm ? lm = k : nothing
+    end
+    return lm > lp ? Inf : lm
+end
+
+# agrees with gap
+function greatestmoved{T<:Real}(p::AbstractVector{T})
+    lp = length(p)
+    gm = 0
+    for i in 1:lp
+        k = p[i]
+        k == i ? nothing :
+           k > gm ? gm = k : nothing
+    end
+    return gm
+end
+
+function supportsize{T<:Real}(p::AbstractVector{T})
+    lp = length(p)
+    count = 0
+    for i in 1:lp
+        k = p[i]
+        k != i ? count += 1 : nothing
+    end
+    count
+end
+
+function support{T<:Real}(p::AbstractVector{T})
+    lp = length(p)
+    mov = Array(eltype(p),0)
+    for i in 1:lp
+        k = p[i]
+        k != i ? push!(mov,i) : nothing
+    end
+    return mov
+end
+
+function fixed{T<:Real}(p::AbstractVector{T})
+    lp = length(p)
+    fixedel = Array(eltype(p),0)
+    for i in 1:lp
+        k = p[i]
+        k == i ? push!(fixedel,i) : nothing
+    end
+    return fixedel
 end
 
 ## Output ##
