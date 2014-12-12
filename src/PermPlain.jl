@@ -554,7 +554,7 @@ function sparsetocycles{T}(sp::Dict{T,T})
 #            println(" 2 in pushing $k")
 #            push!(cyc,k)
         end
-        push!(cycs,reverse!(cyc))
+        push!(cycs,reverse!(cyc))  # inefficient
     end
     return cycs
 end
