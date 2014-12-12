@@ -51,6 +51,7 @@ cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 # compute the cycletype property from PLIST
 cycletype{T<:Real}(p::AbstractVector{T}) = counter(cyclelengths(p))
 cycletype{T<:Real}(c::AbstractArray{Array{T,1},1}) = counter(cyclelengths(c))
+cycletype{T<:Real}(p::Dict{T,T}) = counter(cyclelengths(p))
 
 # Compute cyclic decomposition (PCYC) from input permutation list (PLIST).
 # This builds a cycle list in the canonical order.
@@ -106,6 +107,7 @@ end
 # return the order of the permutation from PLIST
 permorder{T<:Real}(p::AbstractVector{T}) = permorder_from_lengths(cyclelengths(p))
 permorder{T<:Real}(c::AbstractArray{Array{T,1},1}) = permorder_from_lengths(cyclelengths(c))
+permorder{T<:Real}(p::Dict{T,T}) = permorder_from_lengths(cyclelengths(p))
 
 macro swap!(p,q)
     return quote
@@ -187,6 +189,18 @@ function permcompose!{T<:Real, V<:Real}(q::AbstractVector{T}, p::AbstractVector{
     return q
 end
 
+function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
+    dout = Dict{T,T}()
+    maxk = zero(T)    
+    for (k,v) in p
+        qv = get(q,v,zero(T))
+        k == qv ? continue : nothing  # ignore 1-cycles
+        dout[k] = (qv == zero(T) ? v : qv)
+        qv > maxk ? maxk = qv : nothing
+    end
+    return dout, maxk
+end
+
 # power of PLIST. output is PLIST
 # This is slow. Does too much allocation.
 function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
@@ -227,6 +241,8 @@ function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     end
     return c
 end
+
+permpower{T<:Real}(q::Dict{T,T}, exp::Integer) = cycstosparse(permpower(sparsetocycles(q),exp))
 
 # power of PCYC. output is PLIST
 # see pari perm.c
@@ -303,6 +319,7 @@ function isperm{T<:Real}(m::AbstractArray{T,2})
     true
 end
 
+# is cyclic decomposition a permutation
 function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
     seen = counter(eltype(cycs[1])) # inefficient
     for c in cycs
@@ -311,6 +328,11 @@ function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
         end
     end
     return true
+end
+
+# is sparse "permutation" a permutation
+function isperm{T}(sp::Dict{T,T})
+    sort(collect(keys(sp))) == sort(collect(values(sp)))  # inefficient
 end
 
 function isid{T<:Real}(p::AbstractVector{T})
@@ -398,7 +420,16 @@ function preimage{T<:Real}(p::AbstractVector{T}, k::Int)
             return i
         end
     end
-    error("Can't find inverse image of $k.")
+    return k  #  make preimage consistent with image
+#    error("Can't find inverse image of $k.")
+end
+
+function preimage{T<:Real}(p::Dict{T,T}, i::Int)
+    for (k,v) in p
+        v == i && return k
+    end
+    return i  #  make preimage consistent with image
+#    error("Can't find inverse image of $k.")
 end
 
 # List of points mapped to same point by p and q
@@ -556,7 +587,7 @@ function sparsetocycles{T}(sp::Dict{T,T})
     return cycs
 end
 
-function sparsecycleslengths{T}(sp::Dict{T,T})
+function cyclelengths{T}(sp::Dict{T,T})
     cyclens = Array(Int,0)
     ks = collect(keys(sp))
     n = length(ks)
