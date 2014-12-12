@@ -203,6 +203,33 @@ function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
     return dout, maxk
 end
 
+function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})
+    aout = copy(a)
+    len = length(aout)
+    for (k,v) in q
+        if k <= len && v <= len
+            aout[k] = a[v]
+        end
+    end
+    aout
+end
+
+function permapply{T<:Real, V}(q::AbstractVector{T}, a::AbstractArray{V})
+    aout = copy(a)
+    lenq = length(q)
+    lena = length(a)
+    len =  lenq < lena ? lenq : lena
+    for k in 1:len
+        v = q[k]
+        v <= len  && (aout[k] = a[v])
+    end
+    aout
+end
+
+function permapply{T<:Real, V<:String}(q::Union(Dict{T,T},AbstractVector{T}), a::V)
+    ASCIIString(permapply(q,a.data))
+end
+
 # power of PLIST. output is PLIST
 # This is slow. Does too much allocation.
 function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
