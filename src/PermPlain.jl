@@ -13,12 +13,12 @@ include("collect.jl")
 #  PLIST  means  permutation stored as in one line array form
 #  PCYC   means  permutation stored as cyclic decomposition
 
-export permcycles, cyclelengths, permsgn, permorder,
-       permcompose, permcompose!, permpower, permtomat, mattoperm,
-       permtotrans, cycletype, permlistisequal, isperm,
-       canoncycles, cycstoperm, cycleprint, permarrprint,
-       cyc_pow_perm, permcommute, permdistance, permordercyc,
-       ltpermlist
+# export permcycles, cyclelengths, permsgn, permorder,
+#        permcompose, permcompose!, permpower, permtomat, mattoperm,
+#        permtotrans, cycletype, permlistisequal, isperm,
+#        canoncycles, cycstoperm, cycleprint, permarrprint,
+#        cyc_pow_perm, permcommute, permdistance, permordercyc,
+#        ltpermlist
 
 randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
 

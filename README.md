@@ -67,8 +67,10 @@ copy(c)
 copy(p)
 ```
 
-There are several othe methods that are not yet in this list.
+A method ```isperm(A)``` that takes a matrix as input extends the ```Base.isperm()```.
+```isperm``` returns true only if the matrix is a permutation matrix.
 
+There are several othe methods that are not yet in this list.
 
 ## Some things to know
 
