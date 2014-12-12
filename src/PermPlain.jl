@@ -517,6 +517,7 @@ end
 function listtosparse{T<:Real}(p::AbstractVector{T})
     data = Dict{T,T}()
     maxk = zero(T)
+    length(p) == 0 && return (data,maxk)
     for i in p
         pv = p[i]
         if pv != i
