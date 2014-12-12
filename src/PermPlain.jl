@@ -3,6 +3,8 @@ module PermPlain
 using DataStructures.counter
 import Base: isperm, randperm
 
+include("collect.jl")
+
 # Permutations implemented without defining new types.
 # The types, PermList, PermCycs, use this code.
 
@@ -553,6 +555,7 @@ end
 
 function sparsetocycles{T}(sp::Dict{T,T})
     cycs = Array(Array{T,1},0)
+    length(sp) == 0 && return cycs
     ks = collect(keys(sp))
     n = length(ks)
     seen = Dict{T,Bool}()
