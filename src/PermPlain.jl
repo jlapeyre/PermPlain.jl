@@ -1,7 +1,7 @@
 module PermPlain
 
 using DataStructures.counter
-import Base: isperm
+import Base: isperm, randperm
 
 # Permutations implemented without defining new types.
 # The types, PermList, PermCycs, use this code.
@@ -17,6 +17,8 @@ export permcycles, cyclelengths, permsgn, permorder,
        canoncycles, cycstoperm, cycleprint, permarrprint,
        cyc_pow_perm, permcommute, permdistance, permordercyc,
        ltpermlist
+
+randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
 
 # Get the lengths of the cycles in cyclic decomposition
 # from input permutation list (PLIST).
@@ -478,6 +480,85 @@ function fixed{T<:Real}(p::AbstractVector{T})
     end
     return fixedel
 end
+
+function listtosparse{T<:Real}(p::AbstractVector{T})
+    data = Dict{T,T}()
+    maxk = zero(T)
+    for i in p
+        pv = p[i]
+        if pv != i
+            data[i] = pv
+            pv > maxk ? maxk = pv : nothing
+        end
+    end
+    return (data,maxk)
+end
+
+function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
+    data = Dict{T,T}()
+    maxk = zero(T)
+    for c in cycs
+        data[c[1]] = c[end]
+#        println(" *** doing ", c[end], " ", c[1])
+        for i in 2:length(c)
+#            println("doing ", c[i], " ", c[i-1])
+            pv = c[i]
+            pv > maxk ? maxk = pv : nothing
+            data[pv] = c[i-1]
+        end
+    end
+    return (data,maxk)
+end
+
+function sparsetolist{T}(sp::Dict{T,T})
+    p = [one(T):convert(T,maximum(sp)[1])]
+    for (i,v) in sp
+        p[v] = i
+    end
+    return p
+end
+
+function sparsetocycles{T}(sp::Dict{T,T})
+    cycs = Array(Array{T,1},0)
+#    ks = collect(values(sp))
+    ks = collect(keys(sp))
+    n = length(ks)
+    seen = Dict{T,Bool}()
+    for k in ks seen[k] = false end
+    k = ks[1]
+    nseen = 0
+    while nseen <= n
+        didsee = false
+        for i in ks
+            if seen[i] == false
+                k = i
+                didsee = true
+                break
+            end
+        end
+        didsee == false ? (push!(cycs,cyc); break) : nothing
+        k1 = k
+        cyc = Array(T,0)
+#        push!(cyc,k)
+#        println(" out pushing $k")        
+        nseen = nseen + 1
+        while true
+            push!(cyc,k)
+#            println(" 1 in pushing $k")            
+            seen[k] = true
+            k = sp[k]
+            nseen = nseen + 1
+            if k == k1
+                break
+            end
+#            println(" 2 in pushing $k")
+#            push!(cyc,k)
+        end
+        push!(cycs,reverse!(cyc))
+    end
+    return cycs
+end
+
 
 ## Output ##
 
