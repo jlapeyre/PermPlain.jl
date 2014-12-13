@@ -263,6 +263,7 @@ end
 
 # Compute power of permutation. Both input and output are PCYC
 # see pari perm.c
+# Careful of degeneracy, and empty array may be returned.
 function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     r = 1
     for j in 1:length(cyc)
