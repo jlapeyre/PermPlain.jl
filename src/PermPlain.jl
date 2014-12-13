@@ -4,9 +4,7 @@ using DataStructures.counter
 import Base: isperm, randperm
 
 include("collect.jl")
-
-# Permutations implemented without defining new types.
-# The types, PermList, PermCycs, use this code.
+export permlist, permcycles, permsparse, permmatrix # whether to export, and what ?
 
 #  The following acronyms refer to the storage model, not the DataType.
 #  Specifically, they are more-or-less plain julia types.
@@ -14,6 +12,30 @@ include("collect.jl")
 #  PCYC   means  permutation stored as cyclic decomposition
 
 randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
+
+## Find cyclic decomposition or just lengths of cycles ##
+
+# Compute cyclic decomposition (PCYC) from input permutation list (PLIST).
+# This builds a cycle list in the canonical order.
+# See pari for possible efficiency improvement.
+function permcycles{T<:Real}(p::AbstractVector{T})
+    n = length(p)
+    visited = falses(n)
+    cycles = Array(Array{T,1},0)
+    for k in convert(T,1):convert(T,n)
+        if ! visited[k]
+            knext = k
+            cycle = Array(T,0)
+            while ! visited[knext]
+                push!(cycle,knext)
+                visited[knext] = true
+                knext = p[knext]
+            end
+            length(cycle) > 1 && push!(cycles,cycle)
+        end
+    end
+    return cycles
+end
 
 # Get the lengths of the cycles in cyclic decomposition
 # from input permutation list (PLIST).
@@ -47,28 +69,6 @@ cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 cycletype{T<:Real}(p::AbstractVector{T}) = counter(cyclelengths(p))
 cycletype{T<:Real}(c::AbstractArray{Array{T,1},1}) = counter(cyclelengths(c))
 cycletype{T<:Real}(p::Dict{T,T}) = counter(cyclelengths(p))
-
-# Compute cyclic decomposition (PCYC) from input permutation list (PLIST).
-# This builds a cycle list in the canonical order.
-# See pari for possible efficiency improvement.
-function permcycles{T<:Real}(p::AbstractVector{T})
-    n = length(p)
-    visited = falses(n)
-    cycles = Array(Array{T,1},0)
-    for k in convert(T,1):convert(T,n)
-        if ! visited[k]
-            knext = k
-            cycle = Array(T,0)
-            while ! visited[knext]
-                push!(cycle,knext)
-                visited[knext] = true
-                knext = p[knext]
-            end
-            length(cycle) > 1 && push!(cycles,cycle)
-        end
-    end
-    return cycles
-end
 
 # Convert cyclic decomposition (PCYC) to canonical form
 # canonical order used by gap, Mma, and Arndt thesis
@@ -323,18 +323,35 @@ function cyc_pow_perm{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     return p
 end
 
+permmatrix{T<:Real}(p::AbstractVector{T}, sparse::Bool = false) = permtomat(p,sparse)
 # Convert PLIST to PMAT
-# convert permutation to matrix operator
 function permtomat{T<:Real}(p::AbstractVector{T}, sparse::Bool = false)
     n::T = length(p)
     A = sparse ? speye(T,n) : eye(T,n)
     return A[p,:]
 end
 
-# convert matrix to perm in list form
-function mattoperm{T<:Real}(m::AbstractArray{T,2})
+function permmatrix{T}(sp::Dict{T,T})
+    n = convert(T,maximum(sp)[1])
+    ot = one(T)
+    z = zero(T)
+    m = eye(T,n,n);
+    for (i,v) in sp
+        m[i,i] = z
+        m[i,v] = ot
+    end
+    return m
+end
+    
+function permtomat{T<:Real}(p::AbstractVector{T}, sparse::Bool = false)
+    n::T = length(p)
+    A = sparse ? speye(T,n) : eye(T,n)
+    return A[p,:]
+end
+
+function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
     n = size(m)[1]
-    p = Array(T,n)
+    maxk = zero(T)    
     for i in 1:n
         for j in 1:n
             if m[j,i] != 1
@@ -344,6 +361,17 @@ function mattoperm{T<:Real}(m::AbstractArray{T,2})
         end
     end
     p
+end
+
+# convert matrix to perm in list form
+permlist{T<:Real}(m::AbstractArray{T,2}) = mattoperm(m)
+mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array(T,size(m)[1]))
+permcycles{T<:Real}(m::AbstractArray{T,2}) = permcycles(permlist(m))
+
+permsparse{T<:Real}(m::AbstractArray{T,2}) = mattosparse(m)
+function mattosparse{T<:Real}(m::AbstractArray{T,2})
+    p = Dict{T,T}()
+    return mattoperm!(m,p), maximum(p)[1]
 end
 
 # is m a permutation matrix
@@ -378,7 +406,7 @@ function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
     return true
 end
 
-# is sparse "permutation" a permutation
+# is sparse representation a permutation
 function isperm{T}(sp::Dict{T,T})
     sort(collect(keys(sp))) == sort(collect(values(sp)))  # inefficient
 end
@@ -390,8 +418,7 @@ function isid{T<:Real}(p::AbstractVector{T})
     return true
 end
 
-# The input cycles must be disjoint.
-# somewhat inefficient
+permlist{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Real = 0) =  cycstoperm(cycs,pmax)
 function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)  
     length(cycs) == 0 && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
@@ -560,6 +587,7 @@ function fixed{T<:Real}(p::AbstractVector{T})
     return fixedel
 end
 
+permsparse{T<:Real}(p::AbstractVector{T}) = listtosparse(p)
 function listtosparse{T<:Real}(p::AbstractVector{T})
     data = Dict{T,T}()
     maxk = zero(T)
@@ -575,6 +603,7 @@ function listtosparse{T<:Real}(p::AbstractVector{T})
     return (data,maxk)
 end
 
+permsparse{T<:Real}(cycs::AbstractArray{Array{T,1},1}) = cycstosparse(cycs)
 function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
     data = Dict{T,T}()
     maxk = zero(T)
@@ -592,6 +621,7 @@ function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
     return (data,maxk)
 end
 
+permlist{T}(sp::Dict{T,T}) = sparsetolist(sp::Dict{T,T})
 function sparsetolist{T}(sp::Dict{T,T})
     p = [one(T):convert(T,maximum(sp)[1])]
     for (i,v) in sp
@@ -600,6 +630,7 @@ function sparsetolist{T}(sp::Dict{T,T})
     return p
 end
 
+permcycles{T}(sp::Dict{T,T}) = sparsetocycles(sp)
 function sparsetocycles{T}(sp::Dict{T,T})
     cycs = Array(Array{T,1},0)
     length(sp) == 0 && return cycs

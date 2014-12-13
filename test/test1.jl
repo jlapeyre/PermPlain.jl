@@ -14,7 +14,17 @@ p2 = PermPlain.cycstoperm(c1);
 @test PermPlain.permcycles(pp) == PermPlain.canoncycles(c1)
 @test PermPlain.cyc_pow_perm(c,np) == pp
 
+p = Int[3,7,2,4,8,10,1,6,9,5];
+s,max = permsparse(permmatrix(p))
+@test permlist(permcycles(s)) == p
+s,max = permsparse(permcycles(p))
+@test permlist(permmatrix(s)) == p
+s,max = permsparse(p)
+@test permlist(permcycles(permmatrix(s))) == p
 
+@test isperm(s)
+@test isperm(permcycles(s))
+@test isperm(permmatrix(s))
+@test isperm(permlist(s)) # defined in Base
 
-
-
+true
