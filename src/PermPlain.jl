@@ -4,6 +4,8 @@ using DataStructures.counter
 import Base: isperm, randperm
 
 include("collect.jl")
+include("util.jl")
+
 export permlist, permcycles, permsparse, permmatrix # whether to export, and what ?
 
 #  The following acronyms refer to the storage model, not the DataType.
@@ -13,10 +15,10 @@ export permlist, permcycles, permsparse, permmatrix # whether to export, and wha
 
 randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
 
-## Find cyclic decomposition or just lengths of cycles ##
+## permcycles. Find cyclic decomposition  ##
 
 # Compute cyclic decomposition (PCYC) from input permutation list (PLIST).
-# This builds a cycle list in the canonical order.
+# builds a cycle list in the canonical order.
 # See pari for possible efficiency improvement.
 function permcycles{T<:Real}(p::AbstractVector{T})
     n = length(p)
@@ -37,13 +39,61 @@ function permcycles{T<:Real}(p::AbstractVector{T})
     return cycles
 end
 
-# Get the lengths of the cycles in cyclic decomposition
-# from input permutation list (PLIST).
-# Store only the lengths of the cycles, not the cycles
-# themselves. We assume that the elements in p can be used as indices
-# into p. This increases efficiency twofold for Int32,
-# if Int64 is the default. Not sure what it does for efficiency
-# for FloatingPoint types.
+permcycles{T<:Real}(m::AbstractArray{T,2}) = permcycles(permlist(m))
+
+permcycles{T}(sp::Dict{T,T}) = sparsetocycles(sp)
+function sparsetocycles{T}(sp::Dict{T,T})
+    cycs = Array(Array{T,1},0)
+    length(sp) == 0 && return cycs
+    ks = collect(keys(sp))
+    n = length(ks)
+    seen = Dict{T,Bool}()
+    for k in ks seen[k] = false end
+    k = ks[1]
+    nseen = 0
+    while nseen <= n
+        didsee = false
+        for i in ks
+            if seen[i] == false
+                k = i
+                didsee = true
+                break
+            end
+        end
+        didsee == false ? (push!(cycs,cyc); break) : nothing
+        k1 = k
+        cyc = Array(T,0)
+        nseen = nseen + 1
+        while true
+            push!(cyc,k)
+            seen[k] = true
+            k = sp[k]
+            nseen = nseen + 1
+            if k == k1
+                break
+            end
+        end
+        push!(cycs,cyc)
+    end
+    return cycs
+end
+
+# Convert cyclic decomposition to canonical form
+# used by gap, Mma, and Arndt thesis.
+# Note that Arndt uses a different order internally to store the cycles as a single list.
+
+function canoncycles{T}(cycs::AbstractArray{Array{T,1},1})
+    ocycs = Array(Array{T,1},0)
+    for cyc in cycs
+        push!(ocycs,circshift(cyc,-indmin(cyc)+1))
+    end
+    sort!(ocycs,by=(x)->x[1])
+    return ocycs
+end
+
+
+## cyclelengths. Find cyclic decomposition, but only save cycle lengths ##
+
 function cyclelengths{T<:Real}(p::AbstractVector{T})
     n = length(p)
     visited = falses(n)
@@ -65,31 +115,47 @@ end
 
 cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 
-# compute the cycletype property from PLIST
-cycletype{T<:Real}(p::AbstractVector{T}) = counter(cyclelengths(p))
-cycletype{T<:Real}(c::AbstractArray{Array{T,1},1}) = counter(cyclelengths(c))
-cycletype{T<:Real}(p::Dict{T,T}) = counter(cyclelengths(p))
-
-# Convert cyclic decomposition (PCYC) to canonical form
-# canonical order used by gap, Mma, and Arndt thesis
-# Note that Arndt uses a different order internally to store the cycles as a single list.
-#function canoncycles{T<:Real}(cycs::AbstractArray{Array{T,1},1})
-function canoncycles{T}(cycs::AbstractArray{Array{T,1},1})
-    ocycs = Array(Array{T,1},0)
-    for cyc in cycs
-        push!(ocycs,circshift(cyc,-indmin(cyc)+1))
+function cyclelengths{T}(sp::Dict{T,T})
+    cyclens = Array(Int,0)
+    ks = collect(keys(sp))
+    n = length(ks)
+    seen = Dict{T,Bool}()
+    for k in ks seen[k] = false end
+    k = ks[1]
+    nseen = 0
+    while nseen <= n
+        didsee = false
+        for i in ks
+            if seen[i] == false
+                k = i
+                didsee = true
+                break
+            end
+        end
+        didsee == false ? (push!(cyclens,nincyc); break) : nothing
+        k1 = k
+        nincyc = 0
+        nseen = nseen + 1
+        while true
+            nincyc += 1
+            seen[k] = true
+            k = sp[k]
+            nseen = nseen + 1
+            if k == k1
+                break
+            end
+        end
+        push!(cyclens,nincyc)  # inefficient
     end
-    sort!(ocycs,by=(x)->x[1])
-    return ocycs
+    return cyclens
 end
 
-permsgn_from_lengths(lens) = (-1)^(length(lens)+sum(lens))
+## cycle type, sign ##
 
-# return the signature (also called sign) of the permutation
-# from permutation list (PLIST)
-permsgn{T<:Real}(p::AbstractVector{T}) =  permsgn_from_lengths(cyclelengths(p))
-# from PCYC
-permsgn{T<:Real}(c::AbstractArray{Array{T,1},1}) = permsgn_from_lengths(cyclelengths(c))
+cycletype(p) = counter(cyclelengths(p))
+
+permsgn_from_lengths(lens) = (-1)^(length(lens)+sum(lens))
+permsgn(p) = permsgn_from_lengths(cyclelengths(p))
 
 function permorder_from_lengths(clengths)
     result = 1
@@ -99,20 +165,7 @@ function permorder_from_lengths(clengths)
     return result
 end    
 
-# return the order of the permutation from PLIST
-permorder{T<:Real}(p::AbstractVector{T}) = permorder_from_lengths(cyclelengths(p))
-permorder{T<:Real}(c::AbstractArray{Array{T,1},1}) = permorder_from_lengths(cyclelengths(c))
-permorder{T<:Real}(p::Dict{T,T}) = permorder_from_lengths(cyclelengths(p))
-
-macro swap!(p,q)
-    return quote
-        begin
-            tmp = $(esc(p))
-            $(esc(p)) = $(esc(q))
-            $(esc(q)) = tmp
-        end
-    end
-end
+permorder(p) = permorder_from_lengths(cyclelengths(p))
 
 # Test if two PLISTs commute
 function permcommute{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
@@ -366,7 +419,6 @@ end
 # convert matrix to perm in list form
 permlist{T<:Real}(m::AbstractArray{T,2}) = mattoperm(m)
 mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array(T,size(m)[1]))
-permcycles{T<:Real}(m::AbstractArray{T,2}) = permcycles(permlist(m))
 
 permsparse{T<:Real}(m::AbstractArray{T,2}) = mattosparse(m)
 function mattosparse{T<:Real}(m::AbstractArray{T,2})
@@ -630,78 +682,6 @@ function sparsetolist{T}(sp::Dict{T,T})
     return p
 end
 
-permcycles{T}(sp::Dict{T,T}) = sparsetocycles(sp)
-function sparsetocycles{T}(sp::Dict{T,T})
-    cycs = Array(Array{T,1},0)
-    length(sp) == 0 && return cycs
-    ks = collect(keys(sp))
-    n = length(ks)
-    seen = Dict{T,Bool}()
-    for k in ks seen[k] = false end
-    k = ks[1]
-    nseen = 0
-    while nseen <= n
-        didsee = false
-        for i in ks
-            if seen[i] == false
-                k = i
-                didsee = true
-                break
-            end
-        end
-        didsee == false ? (push!(cycs,cyc); break) : nothing
-        k1 = k
-        cyc = Array(T,0)
-        nseen = nseen + 1
-        while true
-            push!(cyc,k)
-            seen[k] = true
-            k = sp[k]
-            nseen = nseen + 1
-            if k == k1
-                break
-            end
-        end
-#        reverse!(cyc)   # inefficient
-        push!(cycs,cyc)
-    end
-    return cycs
-end
-
-function cyclelengths{T}(sp::Dict{T,T})
-    cyclens = Array(Int,0)
-    ks = collect(keys(sp))
-    n = length(ks)
-    seen = Dict{T,Bool}()
-    for k in ks seen[k] = false end
-    k = ks[1]
-    nseen = 0
-    while nseen <= n
-        didsee = false
-        for i in ks
-            if seen[i] == false
-                k = i
-                didsee = true
-                break
-            end
-        end
-        didsee == false ? (push!(cyclens,nincyc); break) : nothing
-        k1 = k
-        nincyc = 0
-        nseen = nseen + 1
-        while true
-            nincyc += 1
-            seen[k] = true
-            k = sp[k]
-            nseen = nseen + 1
-            if k == k1
-                break
-            end
-        end
-        push!(cyclens,nincyc)  # inefficient
-    end
-    return cyclens
-end
 
 
 ## Output ##
