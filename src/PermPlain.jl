@@ -226,6 +226,7 @@ end
 # power of PLIST. output is PLIST
 # This is slow. Does too much allocation.
 function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
+#    println("perm power n=$n")
     n == 0 && return [one(T):convert(T,length(p))]
     n < 0  && return permpower(invperm(p),-n)
     n == 1 && return copy(p) # for consistency, don't return ref
