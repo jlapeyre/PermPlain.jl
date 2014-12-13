@@ -224,19 +224,45 @@ function permapply{T<:Real, V<:String}(q::Union(Dict{T,T},AbstractVector{T}), a:
 end
 
 # power of PLIST. output is PLIST
-# This is slow. Does too much allocation.
-function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
-#    println("perm power n=$n")
+# The method permpower below is usually preferred because it does less allocation
+function permpower2{T<:Real}(p::AbstractVector{T}, n::Integer)
     n == 0 && return [one(T):convert(T,length(p))]
-    n < 0  && return permpower(invperm(p),-n)
     n == 1 && return copy(p) # for consistency, don't return ref
-    q = permpower(p, int(floor(n/2)))
+    n < 0  && return permpower2(invperm(p),-n)
+    q = permpower2(p, int(floor(n/2)))
     q = q[q]
     return iseven(n) ? q : p[q]
 end
 
-# Compute power of permutation.
-# Both input and output are PCYC
+function permpower!{T<:Real}(p::AbstractVector{T},
+                             pret::AbstractVector{T},
+                             ptmp::AbstractVector{T},                             
+                             n::Integer)
+    onep = one(T)
+    lenp = convert(T,length(p))
+    n == 0 && (for i in onep:lenp pret[i] = i end; return )
+    n < 0  && (permpower!(invperm(p), pret, ptmp, -n); return )
+    n == 1 && (copy!(pret,p); return)
+    permpower!(p, ptmp, pret,int(floor(n/2)))
+    if iseven(n)
+        for i in onep:lenp pret[i] = ptmp[ptmp[i]] end
+    else
+        for i in onep:lenp pret[i] = p[ptmp[ptmp[i]]] end
+    end
+end
+
+# This does less allocation (in general) than permpower2.
+# Depending on parameters, the time efficiency is the same to much better (4 times)
+function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
+    n == 0 && return [one(T):convert(T,length(p))]
+    n == 1 && return copy(p) # for consistency, don't return ref    
+    pret = similar(p)
+    ptmp = similar(p)
+    permpower!(p,pret,ptmp,n)
+    return pret
+end
+
+# Compute power of permutation. Both input and output are PCYC
 # see pari perm.c
 function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     r = 1
