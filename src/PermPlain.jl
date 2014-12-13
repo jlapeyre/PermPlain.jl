@@ -252,7 +252,6 @@ function permpower!{T<:Real}(p::AbstractVector{T},
 end
 
 # This does less allocation (in general) than permpower2.
-# Depending on parameters, the time efficiency is the same to much better (4 times)
 function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
     n == 0 && return [one(T):convert(T,length(p))]
     n == 1 && return copy(p) # for consistency, don't return ref    
@@ -299,12 +298,11 @@ function cyc_pow_perm{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     n = 0
     cmaxes = [maximum(c) for c in cyc]
     n = maximum(cmaxes)
-# This is for a cycles of length 1    
+# This routine assumes cycles of length 1 are included. Still don't understand it.
 #    for j = 1:length(cyc)
 #        n += length(cyc[j])+1
 #    end
-#    p = Array(Int,n)
-    p = [1:n] # wasteful
+    p = T[1:n] # wasteful
     for j = 1:length(cyc)
         v = cyc[j]
         n = length(v)
