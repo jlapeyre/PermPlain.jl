@@ -8,7 +8,7 @@ data types. The permutations are stored as
 
 * Arrays of integers corresponding to one-line notation (representation)
 * Arrays of arrays of integers corresponding to cycle notation (representation)
-* Matrices
+* A "sparse" indexable cycle notation
 
 The methods do the following
 
