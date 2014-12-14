@@ -405,7 +405,7 @@ function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
 end
 
 # Compute power of permutation. Both input and output are PCYC
-# see pari perm.c
+# Translated from pari perm.c
 # Careful of degeneracy, and empty array may be returned.
 function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     r = 1
@@ -704,6 +704,7 @@ end
 cycleprint(v::Array) = cycleprint(STDOUT,v)
 permarrprint(v::Array) = permarrprint(STDOUT,v)
 
+# Copied from Base string.jl
 function pprint_to_string(printfunc::Function, xs...)
     s = IOBuffer(Array(Uint8,isa(xs[1],String) ? endof(xs[1]) : 0), true, true)
     truncate(s,0)
