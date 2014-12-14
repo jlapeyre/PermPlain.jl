@@ -216,6 +216,7 @@ cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 
 function cyclelengths{T}(sp::Dict{T,T})
     cyclens = Array(Int,0)
+    isempty(sp) && return cyclens
     ks = collect(keys(sp))
     n = length(ks)
     seen = Dict{T,Bool}()
@@ -620,7 +621,7 @@ end
 
 # The return type depends on value of input. How to get around this ?
 # There is no integer Inf.
-# agrees with gap (except definition,use of inifinity is different)
+# agrees with gap (except definition, use of Inf is different)
 function leastmoved{T<:Real}(p::AbstractVector{T})
     lp = length(p)
     lm = lp+1
@@ -702,5 +703,17 @@ end
 
 cycleprint(v::Array) = cycleprint(STDOUT,v)
 permarrprint(v::Array) = permarrprint(STDOUT,v)
-    
+
+function pprint_to_string(printfunc::Function, xs...)
+    s = IOBuffer(Array(Uint8,isa(xs[1],String) ? endof(xs[1]) : 0), true, true)
+    truncate(s,0)
+    for x in xs
+        printfunc(s, x)
+    end
+    takebuf_string(s)
+end
+
+permarrstring(xs...) = pprint_to_string(permarrprint, xs...)
+cyclestring(xs...) = pprint_to_string(cycleprint, x...)
+
 end # module Permplain
