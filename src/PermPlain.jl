@@ -337,6 +337,20 @@ function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
     return dout, maxk
 end
 
+## permkronecker ##
+
+# Kronecker product for matrices induces a Kronecker product on permutations.
+function permkronecker{T<:Real,S<:Real}(da::AbstractVector{T}, db::AbstractVector{S})
+    na = length(da); nb = length(db)
+    dc = Array(promote_type(T,S), na*nb)
+    for i in 1:na
+        for k in 1:nb
+            dc[nb*(i-1) + k] = nb*(da[i]-1)+db[k]
+        end
+    end
+    dc
+end
+
 ## permapply ##
 
 function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})
