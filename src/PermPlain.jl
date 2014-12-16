@@ -55,15 +55,13 @@ function sparsetocycles{T}(sp::Dict{T,T})
                 break
             end
         end
-        foundunseen == false ? (push!(cycs,cyc); break) : nothing
-        #        foundunseen == false && break
-        nseen = nseen + 1
+        foundunseen == false && break
         kcyclestart = k
         cyc = Array(T,0)
         while true
             push!(cyc,k)
             if seen[k] == true
-#                error("double setting seen k=$k, nseen=$nseen, kcyclestart=$kcyclestart")
+                error("Algorithm error: double setting seen k=$k, nseen=$nseen, kcyclestart=$kcyclestart")
             end
             seen[k] = true
             k = sp[k]
@@ -74,14 +72,6 @@ function sparsetocycles{T}(sp::Dict{T,T})
         end
         push!(cycs,cyc)
     end
-    # vals = collect(values(seen))
-    # length(vals) != nseen && error("nseen $nseen not equal to nvals $(length(vals))")
-    # if ! isempty(findin(collect(values(seen)),false))
-    #     println("uhoh")
-    #     println("nseen $nseen not equal to nvals $(length(vals))")
-    #     println(seen)
-    #     error("Not all seen in sparsetocycles!")
-    # end
     return cycs
 end
 
