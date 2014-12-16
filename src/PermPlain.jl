@@ -47,29 +47,41 @@ function sparsetocycles{T}(sp::Dict{T,T})
     k = ks[1]
     nseen = 0
     while nseen <= n
-        didsee = false
-        for i in ks
+        foundunseen = false
+        for i in ks  # could be more efficient starting search after last found
             if seen[i] == false
                 k = i
-                didsee = true
+                foundunseen = true
                 break
             end
         end
-        didsee == false ? (push!(cycs,cyc); break) : nothing
-        k1 = k
-        cyc = Array(T,0)
+        foundunseen == false ? (push!(cycs,cyc); break) : nothing
+        #        foundunseen == false && break
         nseen = nseen + 1
+        kcyclestart = k
+        cyc = Array(T,0)
         while true
             push!(cyc,k)
+            if seen[k] == true
+#                error("double setting seen k=$k, nseen=$nseen, kcyclestart=$kcyclestart")
+            end
             seen[k] = true
             k = sp[k]
             nseen = nseen + 1
-            if k == k1
+            if k == kcyclestart
                 break
             end
         end
         push!(cycs,cyc)
     end
+    # vals = collect(values(seen))
+    # length(vals) != nseen && error("nseen $nseen not equal to nvals $(length(vals))")
+    # if ! isempty(findin(collect(values(seen)),false))
+    #     println("uhoh")
+    #     println("nseen $nseen not equal to nvals $(length(vals))")
+    #     println(seen)
+    #     error("Not all seen in sparsetocycles!")
+    # end
     return cycs
 end
 
@@ -340,17 +352,46 @@ end
 ## permkronecker ##
 
 # Kronecker product for matrices induces a Kronecker product on permutations.
-function permkronecker{T<:Real,S<:Real}(da::AbstractVector{T}, db::AbstractVector{S})
-    na = length(da); nb = length(db)
-    dc = Array(promote_type(T,S), na*nb)
-    for i in 1:na
-        for k in 1:nb
-            dc[nb*(i-1) + k] = nb*(da[i]-1)+db[k]
+function permkron{T<:Real,S<:Real}(p::AbstractVector{T}, q::AbstractVector{S})
+    np = length(p); nq = length(q)
+    dc = Array(promote_type(T,S), np*nq)
+    for i in 1:np
+        for k in 1:nq
+            dc[nq*(i-1) + k] = nq*(p[i]-1)+q[k]
         end
     end
     dc
 end
 
+# templates not used well here!    
+function permkron{T<:Real, V<:Real}(p::Dict{T,T}, q::Dict{V,V})
+    dout = Dict{T,T}()
+    (isempty(p) || isempty(q)) && error("Can't yet do sparse kronecker product with identity permutations")
+    np = convert(T,maximum(p)[1])
+    nq = convert(T,maximum(q)[1])
+    maxk = zero(T)
+    #    for (i,pi) in p
+    for i in 1:np
+        pi = get(p,i,zero(T))
+        pi = pi == 0 ? i : pi        
+        #        for (k,qk) in q
+        for k in 1:nq
+            qk = get(q,k,zero(T))
+            qk = qk == 0 ? k : qk
+            ind1 = nq *(pi-1) + qk
+            ind2 = nq * (i-1) + k
+            ind1 == ind2 ? continue : nothing
+            z = get(dout,ind2,zero(T))
+            z != zero(T) && continue
+            dout[ind2] = ind1
+            ind2 > maxk ? maxk = ind2 : nothing
+            ind1 > maxk ? maxk = ind1 : nothing  # should be superfluous
+        end
+    end
+    (dout, maxk)
+end
+    
+    
 ## permapply ##
 
 function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})

@@ -52,7 +52,7 @@ permcompose(q,p)          # composition (multiplication) q * p
 permcompose!(q,p)         # composition updating q
 permpower(p,n)            # nth power of p
 permpower(c,n)            # nth power of c
-permkronecker(p,q)        # kronecker product of list permutations, induced by matrix kron product
+permkron(p,q)             # kronecker product of list permutations, induced by matrix kron product
 cyc_pow_perm(c,n)         # nth power of c returned in array representation
 m=permtomat(p,flag)       # permutation matrix, sparse if flag is true
 mattoperm(m)              # array representation of permutation (abstract) matrix m
