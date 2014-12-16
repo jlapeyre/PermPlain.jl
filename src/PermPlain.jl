@@ -43,7 +43,6 @@ function sparsetocycles{T}(sp::Dict{T,T})
     ks = collect(keys(sp))
     n = length(ks)
     seen = Dict{T,Bool}()
-#    println("keys are $ks")
     for k in ks seen[k] = false end
     k = ks[1]
     nseen = 0
@@ -217,11 +216,11 @@ end
 
 cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 
-# Likely has same bug that sparsetocycles had
+# Gives cyclelengths in canonical order.
 function cyclelengths{T}(sp::Dict{T,T})
     cyclens = Array(Int,0)
     isempty(sp) && return cyclens
-    ks = collect(keys(sp))
+    ks = sort(collect(keys(sp)))
     n = length(ks)
     seen = Dict{T,Bool}()
     for k in ks seen[k] = false end
@@ -236,12 +235,14 @@ function cyclelengths{T}(sp::Dict{T,T})
                 break
             end
         end
-        didsee == false ? (push!(cyclens,nincyc); break) : nothing
+        didsee == false && break
         k1 = k
         nincyc = 0
-        nseen = nseen + 1
         while true
             nincyc += 1
+            if seen[k] == true
+                error("Algorithm error: double setting seen k=$k, nseen=$nseen, k1=$k1")
+            end            
             seen[k] = true
             k = sp[k]
             nseen = nseen + 1
