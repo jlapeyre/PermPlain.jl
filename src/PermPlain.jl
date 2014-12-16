@@ -43,6 +43,7 @@ function sparsetocycles{T}(sp::Dict{T,T})
     ks = collect(keys(sp))
     n = length(ks)
     seen = Dict{T,Bool}()
+#    println("keys are $ks")
     for k in ks seen[k] = false end
     k = ks[1]
     nseen = 0
@@ -216,6 +217,7 @@ end
 
 cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 
+# Likely has same bug that sparsetocycles had
 function cyclelengths{T}(sp::Dict{T,T})
     cyclens = Array(Int,0)
     isempty(sp) && return cyclens
@@ -329,12 +331,19 @@ end
 
 function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
     dout = Dict{T,T}()
-    maxk = zero(T)    
-    for (k,v) in p
-        qv = get(q,v,zero(T))
-        k == qv ? continue : nothing  # ignore 1-cycles
-        dout[k] = (qv == zero(T) ? v : qv)
-        qv > maxk ? maxk = qv : nothing
+    z = zero(T)
+    maxk = z
+    seen = Dict{T,Bool}()
+    for k in keys(q) seen[k] = false end  # wasteful!
+    for (k,pofk) in p
+        qofpofk = get(q,pofk,z)
+        seen[pofk] = true
+        k == qofpofk ? continue : nothing  # ignore 1-cycles
+        dout[k] = (qofpofk == z ? pofk : qofpofk)
+          qofpofk > maxk ? maxk = qofpofk : nothing
+    end
+    for j in keys(q)
+        seen[j] ? nothing : dout[j] = q[j]
     end
     return dout, maxk
 end
