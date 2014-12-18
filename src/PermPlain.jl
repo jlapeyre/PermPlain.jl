@@ -255,6 +255,13 @@ function cyclelengths{T}(sp::Dict{T,T})
     return cyclens
 end
 
+## numcycles ##
+
+numcycles(p) = length(cyclelengths(p))
+# Wikipedia says some authors also require no fixed points.
+# Here, we allow fixed points
+iscyclic(p) = numcycles(p) == 1
+
 ## cycle type, sign ##
 
 cycletype(p) = counter(cyclelengths(p))
