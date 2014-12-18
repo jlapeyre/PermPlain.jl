@@ -257,6 +257,7 @@ end
 
 ## numcycles ##
 
+# These are not used by anything now.
 numcycles(p) = length(cyclelengths(p))
 # Wikipedia says some authors also require no fixed points.
 # Here, we allow fixed points
