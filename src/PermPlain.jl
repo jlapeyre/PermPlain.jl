@@ -731,5 +731,6 @@ cyclestring(xs...) = pprint_to_string(cycleprint, x...)
 
 
 include("matrixops.jl")
+include("pivot.jl")
 
 end # module Permplain

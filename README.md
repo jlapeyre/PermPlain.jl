@@ -56,6 +56,8 @@ permkron(p,q)             # kronecker product of list permutations, induced by m
 cyc_pow_perm(c,n)         # nth power of c returned in array representation
 m=permtomat(p,flag)       # permutation matrix, sparse if flag is true
 mattoperm(m)              # array representation of permutation (abstract) matrix m
+ipiv2perm(v,[n])          # convert pivot vector to permutation in list form
+perm2piv(p)               # convert p to pivot vector
 isperm(m)                 # true if matrix m is a permutation
 isperm(c)                 # true if c is a permutation
 Base.isperm(p)            # already present in Base module
