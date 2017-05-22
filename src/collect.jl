@@ -1,22 +1,17 @@
 # surely, there is a more straightforward way
 # These are meant to collect and convert arguments for use with PermutationsA
 
-function collect1{T<:String}(a::Array{T,1})
-    map(BigInt,a)
-end
-
-function collect1{T<:Real}(a::Array{T,1})
-    return a
-end
+collect1(a::Array{String,1}) =  map(BigInt,a)
+collect1(a::Array{Real,1}) = a
 
 function collect1{T<:Real, V<:Real}(::Type{T}, a::Array{V,1})
     return T == V ? a : collect(T,a)  # note that it may return a copy!
 end
 
 function tupcollect{T}(::Type{T}, a::Tuple)
-    aout = Array(Array{T,1},0)
+    aout = Array{Array{T,1}}(0)
     for x in a
-        a1 = Array(T,0)
+        a1 = Array{T}(0)
         for x1 in x
             push!(a1,convert(T,x1))
         end
@@ -25,12 +20,12 @@ function tupcollect{T}(::Type{T}, a::Tuple)
     return aout
 end
 
-for (f,t) in ((:int32, Int32), (:int64, Int64), (:int, Int) , (:BigInt, BigInt))
+for (f,t) in ((:int32, Int32), (:int64, Int64), (:BigInt, BigInt))
     @eval begin
         function tupcollect(::Type{$t}, a::Tuple)
-            aout = Array(Array{$t,1},0)
+            aout = Array{Array{$t,1}}(0)
             for x in a
-                a1 = Array($t,0)
+                a1 = Array{$t}(0)
                 for x1 in x
                     push!(a1, ($f)(x1))
                 end

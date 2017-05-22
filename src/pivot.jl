@@ -7,16 +7,13 @@ function ipiv2perm{T}(v::AbstractVector{T}, maxi::Integer)
     return p
 end
 
-function ipiv2perm{T}(v::AbstractVector{T})
-    ipiv2perm(v,length(v))
-end
-
+ipiv2perm(v::AbstractVector) = ipiv2perm(v,length(v))
 
 # A naive algorithm, maybe there exists a faster one.
 # Build the pivot while permuting 1:n. Make
 # inverse perm at the same time, so we know where to
 # find p[i]
-function perm2ipiv{T}(p::AbstractVector{T})
+function perm2ipiv(p::AbstractVector)
     n = length(p)
     m = [1:n]
     v = similar(m)

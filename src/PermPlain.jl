@@ -18,11 +18,11 @@ randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
 function permcycles{T<:Real}(p::AbstractVector{T})
     n = length(p)
     visited = falses(n)
-    cycles = Array(Array{T,1},0)
+    cycles = Array{Array{T,1}}(0)
     for k in convert(T,1):convert(T,n)
         if ! visited[k]
             knext = k
-            cycle = Array(T,0)
+            cycle = Array{T}(0)
             while ! visited[knext]
                 push!(cycle,knext)
                 visited[knext] = true
@@ -38,7 +38,7 @@ permcycles{T<:Real}(m::AbstractArray{T,2}) = permcycles(permlist(m))
 
 permcycles{T}(sp::Dict{T,T}) = sparsetocycles(sp)
 function sparsetocycles{T}(sp::Dict{T,T})
-    cycs = Array(Array{T,1},0)
+    cycs = Array{Array{T,1}}(0)
     length(sp) == 0 && return cycs
     ks = collect(keys(sp))
     n = length(ks)
@@ -57,7 +57,7 @@ function sparsetocycles{T}(sp::Dict{T,T})
         end
         foundunseen == false && break
         kcyclestart = k
-        cyc = Array(T,0)
+        cyc = Array{T}(0)
         while true
             push!(cyc,k)
             if seen[k] == true
@@ -78,7 +78,7 @@ end
 ## permlist. permutation in single-list form ##
 
 permlist{T<:Real}(m::AbstractArray{T,2}) = mattoperm(m)
-mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array(T,size(m)[1]))
+mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array{T}(size(m)[1]))
 
 function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
     n = size(m)[1]
@@ -96,23 +96,24 @@ end
 
 permlist{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Real = 0) =  cycstoperm(cycs,pmax)
 function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)  
-    length(cycs) == 0 && return [one(T):convert(T,pmax)]
+    isempty(cycs) && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
     cmax = maximum(cmaxes)  # must be a faster way
-    perm = [one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax))]
+#    perm = [one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax))]
+    perm = collect(one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax)))
     for c in cycs
-        for i in convert(T,2):convert(T,length(c))
+        for i in 2:length(c)
             perm[c[i-1]] = c[i]
         end
         perm[c[end]] = c[1]
     end
-    perm[cmax+1:pmax] = [cmax+1:pmax]
+    perm[cmax+1:pmax] = collect(cmax+1:pmax)
     return perm
 end
 
 permlist{T}(sp::Dict{T,T}) = sparsetolist(sp::Dict{T,T})
 function sparsetolist{T}(sp::Dict{T,T})
-    p = [one(T):convert(T,maximum(sp)[1])]
+    p = collect(one(T):convert(T,maximum(sp)[1]))
     for (i,v) in sp
         p[i] = v
     end
@@ -185,7 +186,7 @@ end
 # used by gap, Mma, and Arndt thesis.
 # Note that Arndt uses a different order internally to store the cycles as a single list.
 function canoncycles{T}(cycs::AbstractArray{Array{T,1},1})
-    ocycs = Array(Array{T,1},0)
+    ocycs = Array{Array{T,1}}(0)
     for cyc in cycs
         push!(ocycs,circshift(cyc,-indmin(cyc)+1))
     end
@@ -198,7 +199,7 @@ end
 function cyclelengths{T<:Real}(p::AbstractVector{T})
     n = length(p)
     visited = falses(n)
-    lengths = Array(Int,0)
+    lengths = Array{Int}(0)
     for k in convert(T,1):convert(T,n)
         if ! visited[k]
             knext = k
@@ -218,7 +219,7 @@ cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
 
 # Gives cyclelengths in canonical order.
 function cyclelengths{T}(sp::Dict{T,T})
-    cyclens = Array(Int,0)
+    cyclens = Array{Int}(0)
     isempty(sp) && return cyclens
     ks = sort(collect(keys(sp)))
     n = length(ks)
@@ -311,7 +312,7 @@ function permcompose{T<:Real, V<:Real}(q::AbstractVector{T}, p::AbstractVector{V
     lq = length(q)
     lp == lq && return q[p]  # prbly not much time saved
     lr = lp < lq ? lq : lp
-    r = Array(T,lr)
+    r = Array{T}(lr)
     if lp <= lq
         r[1:lp] = q[p]
         r[lp+1:lq] = q[lp+1:lq]
@@ -382,9 +383,7 @@ function permapply{T<:Real, V}(q::AbstractVector{T}, a::AbstractArray{V})
     aout
 end
 
-function permapply{T<:Real, V<:String}(q::Union(Dict{T,T},AbstractVector{T}), a::V)
-    ASCIIString(permapply(q,a.data))
-end
+permapply{T<:Real}(q::Union{Dict{T,T},AbstractVector{T}}, a::String) = String(permapply(q,a.data))
 
 # power of PLIST. output is PLIST
 # The method permpower below is usually preferred because it does less allocation
@@ -392,7 +391,7 @@ function permpower2{T<:Real}(p::AbstractVector{T}, n::Integer)
     n == 0 && return [one(T):convert(T,length(p))]
     n == 1 && return copy(p) # for consistency, don't return ref
     n < 0  && return permpower2(invperm(p),-n)
-    q = permpower2(p, int(floor(n/2)))
+    q = permpower2(p, Int(floor(n/2)))
     q = q[q]
     return iseven(n) ? q : p[q]
 end
@@ -406,7 +405,7 @@ function permpower!{T<:Real}(p::AbstractVector{T},
     n == 0 && (for i in onep:lenp pret[i] = i end; return )
     n < 0  && (permpower!(invperm(p), pret, ptmp, -n); return )
     n == 1 && (copy!(pret,p); return)
-    permpower!(p, ptmp, pret,int(floor(n/2)))
+    permpower!(p, ptmp, pret,Int(floor(n/2)))
     if iseven(n)
         for i in onep:lenp pret[i] = ptmp[ptmp[i]] end
     else
@@ -432,7 +431,7 @@ function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     for j in 1:length(cyc)
         r += gcd(length(cyc[j])-1,exp)
     end
-    c = Array(Array{T,1},0)
+    c = Array{Array{T,1}}(0)
     for j in 1:length(cyc)
         v = cyc[j]
         n = length(v)
@@ -441,7 +440,7 @@ function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
         m = div(n,g)
         if m == 1 continue end
         for i in 1:g
-            p = Array(Int,0)
+            p = Array{Int}(0)
             l = i
             for k in 1:m
                 push!(p,v[l])
@@ -466,7 +465,7 @@ function cyc_pow_perm{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
 #    for j = 1:length(cyc)
 #        n += length(cyc[j])+1
 #    end
-    p = T[1:n] # wasteful
+    p = collect(T,1:n) # wasteful
     for j = 1:length(cyc)
         v = cyc[j]
         n = length(v)
@@ -620,7 +619,7 @@ end
 function same{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
     lp = length(p)
     lq = length(q)
-    d = Array(eltype(p),0)
+    d = Array{eltype(p)}(0)
     if lp < lq
         for i in 1:lp
             p[i] == q[i] ? push!(d,p[i]) : nothing
@@ -677,7 +676,7 @@ end
 
 function support{T<:Real}(p::AbstractVector{T})
     lp = length(p)
-    mov = Array(eltype(p),0)
+    mov = Array{eltype(p)}(0)
     for i in 1:lp
         k = p[i]
         k != i ? push!(mov,i) : nothing
@@ -687,7 +686,7 @@ end
 
 function fixed{T<:Real}(p::AbstractVector{T})
     lp = length(p)
-    fixedel = Array(eltype(p),0)
+    fixedel = Array{eltype(p)}(0)
     for i in 1:lp
         k = p[i]
         k == i ? push!(fixedel,i) : nothing
@@ -726,7 +725,7 @@ permarrprint(v::Array) = permarrprint(STDOUT,v)
 
 # Copied from Base string.jl
 function pprint_to_string(printfunc::Function, xs...)
-    s = IOBuffer(Array(Uint8,isa(xs[1],String) ? endof(xs[1]) : 0), true, true)
+    s = IOBuffer(Array{Uint8}(isa(xs[1],String) ? endof(xs[1]) : 0), true, true)
     truncate(s,0)
     for x in xs
         printfunc(s, x)
