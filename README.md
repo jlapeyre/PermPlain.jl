@@ -1,10 +1,14 @@
 # PermPlain
 
 [![Build Status](https://travis-ci.org/jlapeyre/PermPlain.jl.svg?branch=master)](https://travis-ci.org/jlapeyre/PermPlain.jl)
+&nbsp;
+Windows: [![Build Status](https://ci.appveyor.com/api/projects/status/github/jlapeyre/PermPlain.jl?branch=master&svg=true)](https://ci.appveyor.com/project/jlapeyre/permplain-jl)
+&nbsp; &nbsp; &nbsp;
+[![Coverage Status](https://coveralls.io/repos/jlapeyre/PermPlain.jl/badge.svg?branch=master&service=github)](https://coveralls.io/github/jlapeyre/PermPlain.jl?branch=master)
+[![codecov.io](http://codecov.io/github/jlapeyre/PermPlain.jl/coverage.svg?branch=master)](http://codecov.io/github/jlapeyre/PermPlain.jl?branch=master)
 
 This package implements methods for manipulating permutations.
-The methods operate on data types in the Base module, or in modules providing generic
-data types. The permutations are stored as
+The permutations are stored as
 
 * Arrays of integers corresponding to one-line notation (representation)
 * Arrays of arrays of integers corresponding to cycle notation (representation)
@@ -21,9 +25,6 @@ The methods do the following
 The methods are meant to work easily with existing routines
 for permutations in Base. They are also wrapped by methods
 on objects in the PermutationsA module.
-
-This module is experimental and the interface should not
-be considered stable.
 
 The cyclic decomposition is a represented by a array of arrays of Integers.
 The array representation is an array of Integers.
