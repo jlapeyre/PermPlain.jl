@@ -4,8 +4,8 @@
 function permkron{T<:Real,S<:Real}(p::AbstractVector{T}, q::AbstractVector{S})
     np = length(p); nq = length(q)
     dc = Array{promote_type(T,S)}(np*nq)
-    for i in 1:np
-        for k in 1:nq
+@inbounds for i in 1:np
+@inbounds for k in 1:nq
             dc[nq*(i-1) + k] = nq*(p[i]-1)+q[k]
         end
     end

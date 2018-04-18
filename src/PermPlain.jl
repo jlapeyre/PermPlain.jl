@@ -4,7 +4,6 @@ using DataStructures.counter
 import Base: isperm, randperm
 
 include("collect.jl")
-include("util.jl")
 
 export permlist, permcycles, permsparse, permmatrix # whether to export, and what ?
 
@@ -487,7 +486,7 @@ end
 
 # Test if two permutations commute
 function permcommute{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
-    length(q) < length(p) ? @swap!(p,q) : nothing
+    length(q) < length(p) ? (p,q) = (q,p) : nothing
     for i in length(p)
         q[p[i]] == p[q[i]] || return false
     end
