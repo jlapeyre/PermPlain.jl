@@ -1,6 +1,6 @@
 module PermPlain
 
-using DataStructures.counter
+import DataStructures: counter
 import Base: isperm, randperm
 
 include("collect.jl")
@@ -18,7 +18,7 @@ function permcycles{T<:Real}(p::AbstractVector{T})
     n = length(p)
     visited = falses(n)
     cycles = Array{Array{T,1}}(0)
-    for k in convert(T,1):convert(T,n)
+@inbounds for k in convert(T,1):convert(T,n)
         if ! visited[k]
             knext = k
             cycle = Array{T}(0)
@@ -43,9 +43,9 @@ function sparsetocycles{T}(sp::Dict{T,T})
     n = length(ks)
     seen = Dict{T,Bool}()
     for k in ks seen[k] = false end
-    k = ks[1]
+@inbounds   k = ks[1]
     nseen = 0
-    while nseen <= n
+@inbounds while nseen <= n
         foundunseen = false
         for i in ks  # could be more efficient starting search after last found
             if seen[i] == false
@@ -82,7 +82,7 @@ mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array{T}(size(m)[1]))
 function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
     n = size(m)[1]
     maxk = zero(T)    
-    for i in 1:n
+@inbounds  for i in 1:n
         for j in 1:n
             if m[j,i] != 1
                 continue
@@ -100,7 +100,7 @@ function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 
     cmax = maximum(cmaxes)  # must be a faster way
 #    perm = [one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax))]
     perm = collect(one(T): (pmax > cmax ? convert(T,pmax) : convert(T,cmax)))
-    for c in cycs
+@inbounds  for c in cycs
         for i in 2:length(c)
             perm[c[i-1]] = c[i]
         end
@@ -113,7 +113,7 @@ end
 permlist{T}(sp::Dict{T,T}) = sparsetolist(sp::Dict{T,T})
 function sparsetolist{T}(sp::Dict{T,T})
     p = collect(one(T):convert(T,maximum(sp)[1]))
-    for (i,v) in sp
+@inbounds for (i,v) in sp
         p[i] = v
     end
     return p
@@ -132,7 +132,7 @@ function listtosparse{T<:Real}(p::AbstractVector{T})
     data = Dict{T,T}()
     maxk = zero(T)
     length(p) == 0 && return (data,maxk)
-    for i in p
+@inbounds for i in p
         pv = p[i]
         if pv != i
             data[i] = pv
@@ -146,7 +146,7 @@ permsparse{T<:Real}(cycs::AbstractArray{Array{T,1},1}) = cycstosparse(cycs)
 function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
     data = Dict{T,T}()
     maxk = zero(T)
-    for c in cycs
+@inbounds for c in cycs
         pv = c[1]
         data[c[end]] = pv
         c[end] > maxk ? maxk = c[end] : nothing        
@@ -174,7 +174,7 @@ function permmatrix{T}(sp::Dict{T,T})
     ot = one(T)
     z = zero(T)
     m = eye(T,n,n);
-    for (i,v) in sp
+@inbounds for (i,v) in sp
         m[i,i] = z
         m[i,v] = ot
     end
@@ -199,7 +199,7 @@ function cyclelengths{T<:Real}(p::AbstractVector{T})
     n = length(p)
     visited = falses(n)
     lengths = Array{Int}(0)
-    for k in convert(T,1):convert(T,n)
+@inbounds for k in convert(T,1):convert(T,n)
         if ! visited[k]
             knext = k
             len = 0
