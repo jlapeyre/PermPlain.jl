@@ -1,4 +1,4 @@
-import PermPlain: permcycles, cycstoperm
+using PermPlain: permcycles, cycstoperm
 
 c = [ [1,6,14,7,3,11], [2,8,12,9,10,5,15,4]]
 

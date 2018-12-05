@@ -1,14 +1,14 @@
 # surely, there is a more straightforward way
 # These are meant to collect and convert arguments for use with PermutationsA
 
-collect1(a::Array{String,1}) =  map(BigInt,a)
-collect1(a::Array{Real,1}) = a
+collect1(a::Vector{<:String}) =  map(BigInt,a)
+collect1(a::Vector{<:Real}) = a
 
-function collect1{T<:Real, V<:Real}(::Type{T}, a::Array{V,1})
-    return T == V ? a : collect(T,a)  # note that it may return a copy!
+function collect1(::Type{T}, a::Vector{V}) where {T, V}
+    return T == V ? a : collect(T, a)  # note that it may return a copy!
 end
 
-function tupcollect{T}(::Type{T}, a::Tuple)
+function tupcollect(::Type{T}, a::Tuple) where T
     aout = Array{Array{T,1}}(0)
     for x in a
         a1 = Array{T}(0)
@@ -40,10 +40,10 @@ function tupcollect(a::Tuple)
     tupcollect(Int,a)
 end
 
-function collect2{T}(a::Array{T,1}...)
+function collect2(a::AbstractVector...)
     collect(map(collect1,a))
 end
 
-function collect2{T,V}(::Type{T}, a::Array{V,1}...)
+function collect2(::Type{T}, a::AbstractVector...) where T
     collect(map((x)->collect1(T,x) ,a))
 end

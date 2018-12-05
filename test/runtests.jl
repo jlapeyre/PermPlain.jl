@@ -1,4 +1,4 @@
 using PermPlain
-using Base.Test
+using Test
 
 include("test1.jl")

@@ -1,20 +1,23 @@
 module PermPlain
 
-import DataStructures: counter
-import Base: isperm, randperm
+using DataStructures: counter
+using Random
+import Base: isperm
 
 include("collect.jl")
 
 export permlist, permcycles, permsparse, permmatrix # whether to export, and what ?
 
-randperm{T<:Real}(::Type{T}, n::Integer) = collect(T,randperm(n))
+randperm(::Type{T}, n::Integer) where T = collect(T,randperm(n))
+
+AbstractVectorVector{T} = AbstractVector{V} where {V <: (AbstractVector{T} where {T})}
 
 ## permcycles. Find cyclic decomposition  ##
 
 # compute cyclic decomposition.
 # builds a cycle list in the canonical order.
 # See pari for possible efficiency improvement.
-function permcycles{T<:Real}(p::AbstractVector{T})
+function permcycles(p::AbstractVector{T}) where T
     n = length(p)
     visited = falses(n)
     cycles = Array{Array{T,1}}(0)
@@ -33,10 +36,10 @@ function permcycles{T<:Real}(p::AbstractVector{T})
     return cycles
 end
 
-permcycles{T<:Real}(m::AbstractArray{T,2}) = permcycles(permlist(m))
+permcycles(m::AbstractMatrix) = permcycles(permlist(m))
+permcycles(sp::Dict{T,T}) where T = sparsetocycles(sp)
 
-permcycles{T}(sp::Dict{T,T}) = sparsetocycles(sp)
-function sparsetocycles{T}(sp::Dict{T,T})
+function sparsetocycles(sp::Dict{T,T}) where T
     cycs = Array{Array{T,1}}(0)
     length(sp) == 0 && return cycs
     ks = collect(keys(sp))
@@ -76,10 +79,10 @@ end
 
 ## permlist. permutation in single-list form ##
 
-permlist{T<:Real}(m::AbstractArray{T,2}) = mattoperm(m)
-mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array{T}(size(m)[1]))
+permlist(m::AbstractMatrix) = mattoperm(m)
+mattoperm(m::AbstractMatrix{T}) where T = mattoperm!(m, Array{T}(size(m)[1]))
 
-function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
+function mattoperm!(m::AbstractMatrix{T}, p) where T
     n = size(m)[1]
     maxk = zero(T)
 @inbounds  for i in 1:n
@@ -93,8 +96,9 @@ function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
     p
 end
 
-permlist{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Real = 0) =  cycstoperm(cycs,pmax)
-function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)
+permlist(cycs::AbstractArray{Array{T, 1}, 1}, pmax::Real = 0) where T <: Real =  cycstoperm(cycs,pmax)
+
+function cycstoperm(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0) where T
     isempty(cycs) && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
     cmax = maximum(cmaxes)  # must be a faster way
@@ -110,8 +114,9 @@ function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 
     return perm
 end
 
-permlist{T}(sp::Dict{T,T}) = sparsetolist(sp::Dict{T,T})
-function sparsetolist{T}(sp::Dict{T,T})
+permlist(sp::Dict{T, T}) where T = sparsetolist(sp::Dict{T, T})
+
+function sparsetolist(sp::Dict{T, T}) where T
     p = collect(one(T):convert(T,maximum(sp)[1]))
 @inbounds for (i,v) in sp
         p[i] = v
@@ -121,14 +126,16 @@ end
 
 ## permsparse ##
 
-permsparse{T<:Real}(m::AbstractArray{T,2}) = mattosparse(m)
-function mattosparse{T<:Real}(m::AbstractArray{T,2})
-    p = Dict{T,T}()
+permsparse(m::AbstractMatrix) = mattosparse(m)
+
+function mattosparse(m::AbstractMatrix{T}) where T
+    p = Dict{T, T}()
     return mattoperm!(m,p), maximum(p)[1]
 end
 
-permsparse{T<:Real}(p::AbstractVector{T}) = listtosparse(p)
-function listtosparse{T<:Real}(p::AbstractVector{T})
+permsparse(p::AbstractVector) = listtosparse(p)
+
+function listtosparse(p::AbstractVector{T}) where T
     data = Dict{T,T}()
     maxk = zero(T)
     length(p) == 0 && return (data,maxk)
@@ -142,8 +149,9 @@ function listtosparse{T<:Real}(p::AbstractVector{T})
     return (data,maxk)
 end
 
-permsparse{T<:Real}(cycs::AbstractArray{Array{T,1},1}) = cycstosparse(cycs)
-function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
+permsparse(cycs::AbstractArray{Array{T, 1}, 1}) where T = cycstosparse(cycs)
+
+function cycstosparse(cycs::AbstractArray{Array{T, 1}, 1}) where T
     data = Dict{T,T}()
     maxk = zero(T)
 @inbounds for c in cycs
@@ -161,15 +169,15 @@ end
 
 ## permmatrix ##
 
-permmatrix{T<:Real}(p::AbstractVector{T}, sparse::Bool = false) = permtomat(p,sparse)
+permmatrix(p::AbstractVector{<:Real}, sparse::Bool = false) = permtomat(p, sparse)
 # Convert PLIST to PMAT
-function permtomat{T<:Real}(p::AbstractVector{T}, sparse::Bool = false)
+function permtomat(p::AbstractVector{T}, sparse::Bool = false) where T <: Real
     n::T = length(p)
     A = sparse ? speye(T,n) : eye(T,n)
     return A[p,:]
 end
 
-function permmatrix{T}(sp::Dict{T,T})
+function permmatrix(sp::Dict{T, T}) where T
     n = convert(T,maximum(sp)[1])
     ot = one(T)
     z = zero(T)
@@ -184,7 +192,7 @@ end
 # Convert cyclic decomposition to canonical form
 # used by gap, Mma, and Arndt thesis.
 # Note that Arndt uses a different order internally to store the cycles as a single list.
-function canoncycles{T}(cycs::AbstractArray{Array{T,1},1})
+function canoncycles(cycs::AbstractArray{Array{T,1},1}) where T
     ocycs = Array{Array{T,1}}(0)
     for cyc in cycs
         push!(ocycs,circshift(cyc,-indmin(cyc)+1))
@@ -195,11 +203,11 @@ end
 
 ## cyclelengths. Find cyclic decomposition, but only save cycle lengths ##
 
-function cyclelengths{T<:Real}(p::AbstractVector{T})
+function cyclelengths(p::AbstractVector{T}) where T
     n = length(p)
     visited = falses(n)
     lengths = Array{Int}(0)
-@inbounds for k in convert(T,1):convert(T,n)
+@inbounds for k in one(T):convert(T,n)
         if ! visited[k]
             knext = k
             len = 0
@@ -214,15 +222,22 @@ function cyclelengths{T<:Real}(p::AbstractVector{T})
     return lengths
 end
 
-cyclelengths{T<:Real}(c::AbstractArray{Array{T,1},1}) = [length(x) for x in c]
+# FIXME: Uh. fix this type specification
+#cyclelengths(c::AbstractArray{Array{T,1},1}) where T = [length(x) for x in c]
+
+# better
+cyclelengths(c::AbstractVector{V}) where {V <: AbstractVector} = [length(x) for x in c]
+
+# best
+cyclelengths(c::AbstractVector{<:AbstractVector}) = [length(x) for x in c]
 
 # Gives cyclelengths in canonical order.
-function cyclelengths{T}(sp::Dict{T,T})
+function cyclelengths(sp::Dict{T, T}) where T
     cyclens = Array{Int}(0)
     isempty(sp) && return cyclens
     ks = sort(collect(keys(sp)))
     n = length(ks)
-    seen = Dict{T,Bool}()
+    seen = Dict{T, Bool}()
     for k in ks seen[k] = false end
     k = ks[1]
     nseen = 0
@@ -283,7 +298,7 @@ permorder(p) = permorder_from_lengths(cyclelengths(p))
 # distance between two PLISTs
 # could use a macro for this and ==.
 # is there a penalty for using swap macro on p and q instead of two branches ?
-function permdistance{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
+function permdistance(p::AbstractVector{T}, q::AbstractVector{T}) where T
     lp = length(p)
     lq = length(q)
     count = 0
@@ -306,7 +321,7 @@ function permdistance{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
 end
 
 # composition (multiplication) of two PLISTs
-function permcompose{T<:Real, V<:Real}(q::AbstractVector{T}, p::AbstractVector{V})
+function permcompose(q::AbstractVector{T}, p::AbstractVector{<:Real}) where T
     lp = length(p)
     lq = length(q)
     lp == lq && return q[p]  # prbly not much time saved
@@ -326,7 +341,7 @@ end
 
 # inplace composition (multiplication) of two PLISTs
 # first argument q is updated.
-function permcompose!{T<:Real, V<:Real}(q::AbstractVector{T}, p::AbstractVector{V})
+function permcompose!(q::AbstractVector, p::AbstractVector)
     lp = length(p)
     lq = length(q)
     if lp > lq
@@ -338,7 +353,7 @@ function permcompose!{T<:Real, V<:Real}(q::AbstractVector{T}, p::AbstractVector{
     return q
 end
 
-function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
+function permcompose(q::Dict{T, T}, p::Dict{V, V}) where {T, V}
     dout = Dict{T,T}()
     z = zero(T)
     maxk = z
@@ -359,7 +374,8 @@ end
 
 ## permapply ##
 
-function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})
+# Vector ?
+function permapply(q::Dict{T, T}, a::AbstractArray) where T
     aout = copy(a)
     len = length(aout)
     for (k,v) in q
@@ -367,10 +383,10 @@ function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})
             aout[k] = a[v]
         end
     end
-    aout
+    return aout
 end
 
-function permapply{T<:Real, V}(q::AbstractVector{T}, a::AbstractArray{V})
+function permapply(q::AbstractVector, a::AbstractArray)
     aout = copy(a)
     lenq = length(q)
     lena = length(a)
@@ -379,14 +395,14 @@ function permapply{T<:Real, V}(q::AbstractVector{T}, a::AbstractArray{V})
         v = q[k]
         v <= len  && (aout[k] = a[v])
     end
-    aout
+    return aout
 end
 
-permapply{T<:Real}(q::Union{Dict{T,T},AbstractVector{T}}, a::String) = String(permapply(q,a.data))
+permapply(q::Union{Dict{T, T}, AbstractVector{T}}, a::String) where T = String(permapply(q,a.data))
 
 # power of PLIST. output is PLIST
 # The method permpower below is usually preferred because it does less allocation
-function permpower2{T<:Real}(p::AbstractVector{T}, n::Integer)
+function permpower2(p::AbstractVector{T}, n::Integer) where T
     n == 0 && return [one(T):convert(T,length(p))]
     n == 1 && return copy(p) # for consistency, don't return ref
     n < 0  && return permpower2(invperm(p),-n)
@@ -395,10 +411,10 @@ function permpower2{T<:Real}(p::AbstractVector{T}, n::Integer)
     return iseven(n) ? q : p[q]
 end
 
-function permpower!{T<:Real}(p::AbstractVector{T},
-                             pret::AbstractVector{T},
-                             ptmp::AbstractVector{T},
-                             n::Integer)
+function permpower!(p::AbstractVector{T},
+                    pret::AbstractVector{T},
+                    ptmp::AbstractVector{T},
+                    n::Integer) where T
     onep = one(T)
     lenp = convert(T,length(p))
     n == 0 && (for i in onep:lenp pret[i] = i end; return )
@@ -413,7 +429,7 @@ function permpower!{T<:Real}(p::AbstractVector{T},
 end
 
 # This does less allocation (in general) than permpower2, and is faster in benchmarks
-function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
+function permpower(p::AbstractVector{T}, n::Integer) where T
     n == 0 && return [one(T):convert(T,length(p))]
     n == 1 && return copy(p) # for consistency, don't return ref
     pret = similar(p)
@@ -425,7 +441,7 @@ end
 # Compute power of permutation. Both input and output are PCYC
 # Translated from pari perm.c
 # Careful of degeneracy, and empty array may be returned.
-function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
+function permpower(cyc::AbstractVector{V}, exp::Integer) where {V <: (AbstractVector{T} where T)}
     r = 1
     for j in 1:length(cyc)
         r += gcd(length(cyc[j])-1,exp)
@@ -452,11 +468,11 @@ function permpower{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
     return c
 end
 
-permpower{T<:Real}(q::Dict{T,T}, exp::Integer) = cycstosparse(permpower(sparsetocycles(q),exp))
+permpower(q::Dict{T, T}, exp::Integer) where T = cycstosparse(permpower(sparsetocycles(q),exp))
 
 # power of PCYC. output is PLIST
 # see pari perm.c
-function cyc_pow_perm{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
+function cyc_pow_perm(cyc::AbstractVector{V}, exp::Integer) where (V <: AbstractVector{T} where {T})
     n = 0
     cmaxes = [maximum(c) for c in cyc]
     n = maximum(cmaxes)
@@ -485,7 +501,7 @@ function cyc_pow_perm{T<:Real}(cyc::AbstractArray{Array{T,1},1}, exp::Integer)
 end
 
 # Test if two permutations commute
-function permcommute{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
+function permcommute(p::AbstractVector{T}, q::AbstractVector{T}) where T
     length(q) < length(p) ? (p,q) = (q,p) : nothing
     for i in length(p)
         q[p[i]] == p[q[i]] || return false
@@ -497,7 +513,7 @@ function permcommute{T<:Real}(p::AbstractVector{T}, q::AbstractVector{T})
 end
 
 # is m a permutation matrix
-function isperm{T<:Real}(m::AbstractArray{T,2})
+function isperm(m::AbstractMatrix{T}) where T
     sx,sy = size(m)
     sx == sy || return false
     z = zero(T)
@@ -518,7 +534,7 @@ function isperm{T<:Real}(m::AbstractArray{T,2})
 end
 
 # is cyclic decomposition a permutation
-function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
+function isperm(cycs::AbstractVector{V}) where {V <: AbstractArray{T} where T}
     seen = counter(eltype(cycs[1])) # inefficient
     for c in cycs
         for i in c
@@ -529,18 +545,18 @@ function isperm{T<:Real}(cycs::AbstractArray{Array{T,1},1})
 end
 
 # is sparse representation a permutation
-function isperm{T}(sp::Dict{T,T})
+function isperm(sp::Dict{T, T}) where T
     sort(collect(keys(sp))) == sort(collect(values(sp)))  # inefficient
 end
 
-function isid{T<:Real}(p::AbstractVector{T})
+function isid(p::AbstractVector)
     for i in 1:length(p)
         i == p[i] || return false
     end
     return true
 end
 
-function permlistisequal{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
+function permlistisequal(p::AbstractVector{T}, q::AbstractVector) where T
     lp = length(p)
     lq = length(q)
     s = one(T)
@@ -565,7 +581,7 @@ end
 # is p < q with lexicographical ordering ?
 for (f,ret) in ((:ltpermlist, :false), (:lepermlist, :true))
     @eval begin
-function ($f){T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
+function ($f)(p::AbstractVector{T}, q::AbstractVector{V}) where {T, V}
     o = one(T)
     lp = length(p)
     lq = length(q)
@@ -594,7 +610,7 @@ end
 end
 
 # preimage of k under p
-function preimage{T<:Real}(p::AbstractVector{T}, k::Int)
+function preimage(p::AbstractVector, k::Int)
     k > length(p) && return k
     for i in 1:length(p)
         if p[i] == k
@@ -605,7 +621,7 @@ function preimage{T<:Real}(p::AbstractVector{T}, k::Int)
 #    error("Can't find inverse image of $k.")
 end
 
-function preimage{T<:Real}(p::Dict{T,T}, i::Int)
+function preimage(p::Dict{T, T}, i::Int) where T
     for (k,v) in p
         v == i && return k
     end
@@ -615,7 +631,7 @@ end
 
 # List of points mapped to same point by p and q
 #function same(pin::PermList, qin::PermList)
-function same{T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
+function same(p::AbstractVector, q::AbstractVector)
     lp = length(p)
     lq = length(q)
     d = Array{eltype(p)}(0)
