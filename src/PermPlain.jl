@@ -12,6 +12,9 @@ export permlist, permcycles, permsparse, permmatrix # whether to export, and wha
 
 randperm(::Type{T}, n::Integer) where T = collect(T,randperm(n))
 
+eye(::Type{T}, n::Integer) where T =  Matrix{T}(LinearAlgebra.I, n, n)
+speye(::Type{T}, n) where T = sparse(LinearAlgebra.I * one(T), n, n)
+
 AbstractVectorVector{T} = AbstractVector{V} where {V <: (AbstractVector{T} where {T})}
 
 ## permcycles. Find cyclic decomposition  ##
@@ -176,7 +179,7 @@ permmatrix(p::AbstractVector{<:Real}, sparse::Bool = false) = permtomat(p, spars
 # Convert PLIST to PMAT
 function permtomat(p::AbstractVector{T}, sparse::Bool = false) where T <: Real
     n::T = length(p)
-    A = sparse ? sparse(LinearAlgebra.I*one(T), n, n) : Matrix{T}(LinearAlgebra.I, n, n)
+    A = sparse ? speye(T, n) : eye(T, n)
     return A[p,:]
 end
 
@@ -184,7 +187,7 @@ function permmatrix(sp::Dict{T, T}) where T
     n = convert(T,maximum(sp)[1])
     ot = one(T)
     z = zero(T)
-    m = Matrix(LinearAlgebra.I, n, n)
+    m = eye(Int, n)
 @inbounds for (i, v) in sp
         m[i,i] = z
         m[i,v] = ot
