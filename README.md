@@ -35,7 +35,7 @@ Usage:
 ```julia
 p = randperm(10)          # permutation with Base.randperm
 p = randperm(BigInt,10)   # added methods to select type of array elements.
-p = randperm(Int32,10)    # 
+p = randperm(Int32,10)    #
 c = permcycles(p)         # cyclic decompostion of p in canonical form.
 cycstoperm(c)             # convert c to array form ( p == cycstoperm(c) is true )
 cyclelengths(p)           # list of lengths of cycles in decomposition of p.

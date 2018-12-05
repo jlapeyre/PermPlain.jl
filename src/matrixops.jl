@@ -12,7 +12,7 @@ function permkron{T<:Real,S<:Real}(p::AbstractVector{T}, q::AbstractVector{S})
     dc
 end
 
-# templates not used well here!    
+# templates not used well here!
 function permkron{T<:Real, V<:Real}(p::Dict{T,T}, q::Dict{V,V})
     dout = Dict{T,T}()
     (isempty(p) || isempty(q)) && error("Can't yet do sparse kronecker product with identity permutations")
@@ -22,7 +22,7 @@ function permkron{T<:Real, V<:Real}(p::Dict{T,T}, q::Dict{V,V})
     #    for (i,pi) in p
     for i in 1:np
         pi = get(p,i,zero(T))
-        pi = pi == 0 ? i : pi        
+        pi = pi == 0 ? i : pi
         #        for (k,qk) in q
         for k in 1:nq
             qk = get(q,k,zero(T))

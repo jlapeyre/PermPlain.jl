@@ -27,4 +27,3 @@ Some code is based on code from Permutations.jl, mostly by Scheinerman.
 
 Some routines are based on code in the pari library and the gap program.
 Both pari and gap are under the GNU General Public License.
-

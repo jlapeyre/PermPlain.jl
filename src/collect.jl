@@ -47,4 +47,3 @@ end
 function collect2{T,V}(::Type{T}, a::Array{V,1}...)
     collect(map((x)->collect1(T,x) ,a))
 end
-

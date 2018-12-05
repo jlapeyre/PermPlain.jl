@@ -81,7 +81,7 @@ mattoperm{T<:Real}(m::AbstractArray{T,2}) = mattoperm!(m,Array{T}(size(m)[1]))
 
 function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
     n = size(m)[1]
-    maxk = zero(T)    
+    maxk = zero(T)
 @inbounds  for i in 1:n
         for j in 1:n
             if m[j,i] != 1
@@ -94,7 +94,7 @@ function mattoperm!{T<:Real}(m::AbstractArray{T,2}, p)
 end
 
 permlist{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Real = 0) =  cycstoperm(cycs,pmax)
-function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)  
+function cycstoperm{T<:Real}(cycs::AbstractArray{Array{T,1},1}, pmax::Integer = 0)
     isempty(cycs) && return [one(T):convert(T,pmax)]
     cmaxes = [maximum(c) for c in cycs]
     cmax = maximum(cmaxes)  # must be a faster way
@@ -149,9 +149,9 @@ function cycstosparse{T<:Real}(cycs::AbstractArray{Array{T,1},1})
 @inbounds for c in cycs
         pv = c[1]
         data[c[end]] = pv
-        c[end] > maxk ? maxk = c[end] : nothing        
+        c[end] > maxk ? maxk = c[end] : nothing
         for i in 1:length(c)-1
-            pv = c[i]            
+            pv = c[i]
             data[pv] = c[i+1]
             pv > maxk ? maxk = pv : nothing
         end
@@ -242,7 +242,7 @@ function cyclelengths{T}(sp::Dict{T,T})
             nincyc += 1
             if seen[k] == true
                 error("Algorithm error: double setting seen k=$k, nseen=$nseen, k1=$k1")
-            end            
+            end
             seen[k] = true
             k = sp[k]
             nseen = nseen + 1
@@ -276,7 +276,7 @@ function permorder_from_lengths(clengths)
         result = lcm(result, c)
     end
     return result
-end    
+end
 
 permorder(p) = permorder_from_lengths(cyclelengths(p))
 
@@ -356,7 +356,7 @@ function permcompose{T<:Real, V<:Real}(q::Dict{T,T}, p::Dict{V,V})
     end
     return dout, maxk
 end
-    
+
 ## permapply ##
 
 function permapply{T<:Real, V}(q::Dict{T,T}, a::AbstractArray{V})
@@ -397,7 +397,7 @@ end
 
 function permpower!{T<:Real}(p::AbstractVector{T},
                              pret::AbstractVector{T},
-                             ptmp::AbstractVector{T},                             
+                             ptmp::AbstractVector{T},
                              n::Integer)
     onep = one(T)
     lenp = convert(T,length(p))
@@ -415,7 +415,7 @@ end
 # This does less allocation (in general) than permpower2, and is faster in benchmarks
 function permpower{T<:Real}(p::AbstractVector{T}, n::Integer)
     n == 0 && return [one(T):convert(T,length(p))]
-    n == 1 && return copy(p) # for consistency, don't return ref    
+    n == 1 && return copy(p) # for consistency, don't return ref
     pret = similar(p)
     ptmp = similar(p)
     permpower!(p,pret,ptmp,n)
@@ -592,7 +592,7 @@ function ($f){T<:Real, V<:Real}(p::AbstractVector{T}, q::AbstractVector{V})
 end
 end
 end
-        
+
 # preimage of k under p
 function preimage{T<:Real}(p::AbstractVector{T}, k::Int)
     k > length(p) && return k
