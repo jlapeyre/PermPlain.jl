@@ -1,20 +1,28 @@
 ## permkronecker ##
 
 # Kronecker product for matrices induces a Kronecker product on permutations.
-function permkron(p::AbstractVector{T}, q::AbstractVector{S}) where {T, S}
+"""
+    permkron(p, q)
+
+
+Compute the Kronecker product of permutations `p` and `q`
+induced by their matrix representations.
+"""
+function permkron(p::PList{T}, q::PList{S}) where {T, S}
     np = length(p); nq = length(q)
-    dc = Array{promote_type(T,S)}(np*nq)
+    dc = Array{promote_type(T, S)}(undef, np*nq)
 @inbounds for i in 1:np
-@inbounds for k in 1:nq
+    for k in 1:nq
             dc[nq*(i-1) + k] = nq*(p[i]-1)+q[k]
         end
     end
     dc
 end
 
-# templates not used well here!
-function permkron(p::Dict{T, T}, q::Dict{V, V}) where {T<:Real, V<:Real}
-    dout = Dict{T,T}()
+# This is partly broken
+function permkron(pt::PDict{T}, qt::PDict) where {T<:Real}
+    dout = Dict{T, T}()
+    p = getdata(pt); q = getdata(qt)
     (isempty(p) || isempty(q)) && error("Can't yet do sparse kronecker product with identity permutations")
     np = convert(T,maximum(p)[1])
     nq = convert(T,maximum(q)[1])
@@ -37,11 +45,11 @@ function permkron(p::Dict{T, T}, q::Dict{V, V}) where {T<:Real, V<:Real}
             ind1 > maxk ? maxk = ind1 : nothing  # should be superfluous
         end
     end
-    (dout, maxk)
+    return PDict(dout, permlength(pt) * permlength(qt))
 end
 
 # This a bit more efficient than full matrix multiplication. Cuts out one loop.
-function permkron(a::AbstractVector{T}, b::AbstractMatrix{S}) where {T<:Real,S<:Real}
+function permkron(a::PList{T}, b::PMatrix{S}) where {T<:Real,S<:Real}
     (nrowa, ncola) = (length(a),length(a))
     (nrowb, ncolb) = size(b)
     R = zeros(promote_type(T,S), nrowa * nrowb, ncola * ncolb)
@@ -54,7 +62,7 @@ function permkron(a::AbstractVector{T}, b::AbstractMatrix{S}) where {T<:Real,S<:
             R[roff+k,soff+l] = b[k,l]
         end
     end
-    R
+    return R
 end
 
 # For testing. If there is a difference, it is small
