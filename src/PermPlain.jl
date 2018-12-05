@@ -1,6 +1,8 @@
 module PermPlain
 
 using DataStructures: counter
+import LinearAlgebra
+using SparseArrays: sparse
 using Random
 import Base: isperm
 
@@ -20,11 +22,11 @@ AbstractVectorVector{T} = AbstractVector{V} where {V <: (AbstractVector{T} where
 function permcycles(p::AbstractVector{T}) where T
     n = length(p)
     visited = falses(n)
-    cycles = Array{Array{T,1}}(0)
+    cycles = Array{Vector{T}}(undef, 0)
 @inbounds for k in convert(T,1):convert(T,n)
         if ! visited[k]
             knext = k
-            cycle = Array{T}(0)
+            cycle = Array{T}(undef, 0)
             while ! visited[knext]
                 push!(cycle,knext)
                 visited[knext] = true
@@ -40,7 +42,7 @@ permcycles(m::AbstractMatrix) = permcycles(permlist(m))
 permcycles(sp::Dict{T,T}) where T = sparsetocycles(sp)
 
 function sparsetocycles(sp::Dict{T,T}) where T
-    cycs = Array{Array{T,1}}(0)
+    cycs = Array{Vector{T}}(undef, 0)
     length(sp) == 0 && return cycs
     ks = collect(keys(sp))
     n = length(ks)
@@ -59,7 +61,7 @@ function sparsetocycles(sp::Dict{T,T}) where T
         end
         foundunseen == false && break
         kcyclestart = k
-        cyc = Array{T}(0)
+        cyc = Array{T}(undef, 0)
         while true
             push!(cyc,k)
             if seen[k] == true
@@ -80,9 +82,10 @@ end
 ## permlist. permutation in single-list form ##
 
 permlist(m::AbstractMatrix) = mattoperm(m)
-mattoperm(m::AbstractMatrix{T}) where T = mattoperm!(m, Array{T}(size(m)[1]))
+mattoperm(m::AbstractMatrix{T}) where T = mattoperm!(Vector{T}(undef, size(m, 1)), m)
 
-function mattoperm!(m::AbstractMatrix{T}, p) where T
+# FIXME: p is sometimes an Array{:Bool}.
+function mattoperm!(p, m::AbstractMatrix{T}) where T
     n = size(m)[1]
     maxk = zero(T)
 @inbounds  for i in 1:n
@@ -130,7 +133,7 @@ permsparse(m::AbstractMatrix) = mattosparse(m)
 
 function mattosparse(m::AbstractMatrix{T}) where T
     p = Dict{T, T}()
-    return mattoperm!(m,p), maximum(p)[1]
+    return mattoperm!(p, m), maximum(p)[1]
 end
 
 permsparse(p::AbstractVector) = listtosparse(p)
@@ -173,7 +176,7 @@ permmatrix(p::AbstractVector{<:Real}, sparse::Bool = false) = permtomat(p, spars
 # Convert PLIST to PMAT
 function permtomat(p::AbstractVector{T}, sparse::Bool = false) where T <: Real
     n::T = length(p)
-    A = sparse ? speye(T,n) : eye(T,n)
+    A = sparse ? sparse(LinearAlgebra.I*one(T), n, n) : Matrix{T}(LinearAlgebra.I, n, n)
     return A[p,:]
 end
 
@@ -181,8 +184,8 @@ function permmatrix(sp::Dict{T, T}) where T
     n = convert(T,maximum(sp)[1])
     ot = one(T)
     z = zero(T)
-    m = eye(T,n,n);
-@inbounds for (i,v) in sp
+    m = Matrix(LinearAlgebra.I, n, n)
+@inbounds for (i, v) in sp
         m[i,i] = z
         m[i,v] = ot
     end
@@ -193,9 +196,9 @@ end
 # used by gap, Mma, and Arndt thesis.
 # Note that Arndt uses a different order internally to store the cycles as a single list.
 function canoncycles(cycs::AbstractArray{Array{T,1},1}) where T
-    ocycs = Array{Array{T,1}}(0)
+    ocycs = Array{Array{T,1}}(undef, 0)
     for cyc in cycs
-        push!(ocycs,circshift(cyc,-indmin(cyc)+1))
+        push!(ocycs,circshift(cyc, -argmin(cyc) + 1))
     end
     sort!(ocycs,by=(x)->x[1])
     return ocycs
@@ -206,7 +209,7 @@ end
 function cyclelengths(p::AbstractVector{T}) where T
     n = length(p)
     visited = falses(n)
-    lengths = Array{Int}(0)
+    lengths = Array{Int}(undef, 0)
 @inbounds for k in one(T):convert(T,n)
         if ! visited[k]
             knext = k
@@ -226,14 +229,14 @@ end
 #cyclelengths(c::AbstractArray{Array{T,1},1}) where T = [length(x) for x in c]
 
 # better
-cyclelengths(c::AbstractVector{V}) where {V <: AbstractVector} = [length(x) for x in c]
+# cyclelengths(c::AbstractVector{V}) where {V <: AbstractVector} = [length(x) for x in c]
 
 # best
 cyclelengths(c::AbstractVector{<:AbstractVector}) = [length(x) for x in c]
 
 # Gives cyclelengths in canonical order.
 function cyclelengths(sp::Dict{T, T}) where T
-    cyclens = Array{Int}(0)
+    cyclens = Array{Int}(undef, 0)
     isempty(sp) && return cyclens
     ks = sort(collect(keys(sp)))
     n = length(ks)
@@ -441,12 +444,12 @@ end
 # Compute power of permutation. Both input and output are PCYC
 # Translated from pari perm.c
 # Careful of degeneracy, and empty array may be returned.
-function permpower(cyc::AbstractVector{V}, exp::Integer) where {V <: (AbstractVector{T} where T)}
+function permpower(cyc::AbstractVector{<:AbstractVector{T}}, exp::Integer) where {T}
     r = 1
     for j in 1:length(cyc)
         r += gcd(length(cyc[j])-1,exp)
     end
-    c = Array{Array{T,1}}(0)
+    c = Vector{Vector{T}}(undef, 0)
     for j in 1:length(cyc)
         v = cyc[j]
         n = length(v)
@@ -455,7 +458,7 @@ function permpower(cyc::AbstractVector{V}, exp::Integer) where {V <: (AbstractVe
         m = div(n,g)
         if m == 1 continue end
         for i in 1:g
-            p = Array{Int}(0)
+            p = Array{Int}(undef, 0)
             l = i
             for k in 1:m
                 push!(p,v[l])
@@ -472,7 +475,7 @@ permpower(q::Dict{T, T}, exp::Integer) where T = cycstosparse(permpower(sparseto
 
 # power of PCYC. output is PLIST
 # see pari perm.c
-function cyc_pow_perm(cyc::AbstractVector{V}, exp::Integer) where (V <: AbstractVector{T} where {T})
+function cyc_pow_perm(cyc::AbstractVector{<:AbstractVector{T}}, exp::Integer) where {T}
     n = 0
     cmaxes = [maximum(c) for c in cyc]
     n = maximum(cmaxes)
@@ -634,7 +637,7 @@ end
 function same(p::AbstractVector, q::AbstractVector)
     lp = length(p)
     lq = length(q)
-    d = Array{eltype(p)}(0)
+    d = Array{eltype(p)}(undef, 0)
     if lp < lq
         for i in 1:lp
             p[i] == q[i] ? push!(d,p[i]) : nothing
@@ -691,7 +694,7 @@ end
 
 function support(p::AbstractVector)
     lp = length(p)
-    mov = Array{eltype(p)}(0)
+    mov = Array{eltype(p)}(undef, 0)
     for i in 1:lp
         k = p[i]
         k != i ? push!(mov,i) : nothing
@@ -701,7 +704,7 @@ end
 
 function fixed(p::AbstractVector)
     lp = length(p)
-    fixedel = Array{eltype(p)}(0)
+    fixedel = Array{eltype(p)}(undef, 0)
     for i in 1:lp
         k = p[i]
         k == i ? push!(fixedel,i) : nothing

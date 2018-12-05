@@ -9,9 +9,9 @@ function collect1(::Type{T}, a::Vector{V}) where {T, V}
 end
 
 function tupcollect(::Type{T}, a::Tuple) where T
-    aout = Array{Array{T,1}}(0)
+    aout = Array{Array{T,1}}(undef, 0)
     for x in a
-        a1 = Array{T}(0)
+        a1 = Array{T}(undef, 0)
         for x1 in x
             push!(a1,convert(T,x1))
         end
@@ -23,13 +23,13 @@ end
 for (f,t) in ((:int32, Int32), (:int64, Int64), (:BigInt, BigInt))
     @eval begin
         function tupcollect(::Type{$t}, a::Tuple)
-            aout = Array{Array{$t,1}}(0)
+            aout = Array{Array{$t,1}}(undef, 0)
             for x in a
-                a1 = Array{$t}(0)
+                a1 = Array{$t}(undef, 0)
                 for x1 in x
                     push!(a1, ($f)(x1))
                 end
-                push!(aout,a1)
+                push!(aout, a1)
             end
             return aout
         end
