@@ -1,5 +1,5 @@
 # Copied from linalg/lu.jl
-function ipiv2perm{T}(v::AbstractVector{T}, maxi::Integer)
+function ipiv2perm(v::AbstractVector{T}, maxi::Integer) where T
     p = T[1:maxi]
     @inbounds for i in 1:length(v)
         p[i], p[v[i]] = p[v[i]], p[i]

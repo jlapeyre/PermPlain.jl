@@ -1,7 +1,7 @@
 ## permkronecker ##
 
 # Kronecker product for matrices induces a Kronecker product on permutations.
-function permkron{T<:Real,S<:Real}(p::AbstractVector{T}, q::AbstractVector{S})
+function permkron(p::AbstractVector{T}, q::AbstractVector{S}) where {T, S}
     np = length(p); nq = length(q)
     dc = Array{promote_type(T,S)}(np*nq)
 @inbounds for i in 1:np
@@ -13,7 +13,7 @@ function permkron{T<:Real,S<:Real}(p::AbstractVector{T}, q::AbstractVector{S})
 end
 
 # templates not used well here!
-function permkron{T<:Real, V<:Real}(p::Dict{T,T}, q::Dict{V,V})
+function permkron(p::Dict{T, T}, q::Dict{V, V}) where {T<:Real, V<:Real}
     dout = Dict{T,T}()
     (isempty(p) || isempty(q)) && error("Can't yet do sparse kronecker product with identity permutations")
     np = convert(T,maximum(p)[1])
@@ -41,7 +41,7 @@ function permkron{T<:Real, V<:Real}(p::Dict{T,T}, q::Dict{V,V})
 end
 
 # This a bit more efficient than full matrix multiplication. Cuts out one loop.
-function permkron{T<:Real,S<:Real}(a::AbstractVector{T}, b::AbstractMatrix{S})
+function permkron(a::AbstractVector{T}, b::AbstractMatrix{S}) where {T<:Real,S<:Real}
     (nrowa, ncola) = (length(a),length(a))
     (nrowb, ncolb) = size(b)
     R = zeros(promote_type(T,S), nrowa * nrowb, ncola * ncolb)

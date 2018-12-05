@@ -656,7 +656,7 @@ end
 # The return type depends on value of input. How to get around this ?
 # There is no integer Inf.
 # agrees with gap (except definition, use of Inf is different)
-function leastmoved{T<:Real}(p::AbstractVector{T})
+function leastmoved(p::AbstractVector)
     lp = length(p)
     lm = lp+1
     for i in 1:lp
@@ -668,7 +668,7 @@ function leastmoved{T<:Real}(p::AbstractVector{T})
 end
 
 # agrees with gap
-function greatestmoved{T<:Real}(p::AbstractVector{T})
+function greatestmoved(p::AbstractVector)
     lp = length(p)
     gm = 0
     for i in 1:lp
@@ -679,7 +679,7 @@ function greatestmoved{T<:Real}(p::AbstractVector{T})
     return gm
 end
 
-function supportsize{T<:Real}(p::AbstractVector{T})
+function supportsize(p::AbstractVector)
     lp = length(p)
     count = 0
     for i in 1:lp
@@ -689,7 +689,7 @@ function supportsize{T<:Real}(p::AbstractVector{T})
     count
 end
 
-function support{T<:Real}(p::AbstractVector{T})
+function support(p::AbstractVector)
     lp = length(p)
     mov = Array{eltype(p)}(0)
     for i in 1:lp
@@ -699,7 +699,7 @@ function support{T<:Real}(p::AbstractVector{T})
     return mov
 end
 
-function fixed{T<:Real}(p::AbstractVector{T})
+function fixed(p::AbstractVector)
     lp = length(p)
     fixedel = Array{eltype(p)}(0)
     for i in 1:lp
