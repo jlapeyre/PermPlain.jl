@@ -9,7 +9,7 @@ Functions for converting among reprentations: `permlist`, `permcycles`, `permmat
 
 Functions: `isperm`, `permsgn`, `canoncycles`, `cycletype`, `cyclelengths`, `numcycles`, `permlength`,
       `permorder`, `permpower`, `permpower2`, `permcommute`, `permcompose`, `permcompose!`,
-     `permkron`, `ltpermlist`
+     `permkron`, `ltpermlist`, `support`, `supportsize`, `greatestmoved`, `leastmoved`, `preimage`, `same`, `fixed`
 """
 module PermPlain
 
@@ -22,9 +22,9 @@ import Base: isperm, ==
 include("collect.jl")
 
 export permlist, permcycles, permsparse, permmatrix, canoncycles, permpower, permpower2,
-    permsgn, cycletype
+    permsgn, cycletype, support, supportsize, greatestmoved, leastmoved, fixed
 export cyclelengths, numcycles, permlength, permorder, getdata, cyc_pow_perm, permcompose, permcompose!,
-    permcommute, permkron, ltpermlist
+    permcommute, permkron, ltpermlist, preimage
 export PCycles, PList, PMatrix, PDict
 
 randperm(::Type{T}, n::Integer) where T = collect(T, randperm(n))
@@ -877,7 +877,11 @@ end
 end
 end
 
-# preimage of k under p
+"""
+    preimage(p, k::Int)
+
+The preimage of `k` under permutation `p`.
+"""
 function preimage(p::PList, k::Int)
     k > length(p) && return k
     for i in 1:length(p)
@@ -899,6 +903,11 @@ end
 
 # List of points mapped to same point by p and q
 #function same(pin::PermList, qin::PermList)
+"""
+    same(p::PList, q::PList)
+
+A list of points mapped to same point by p and q
+"""
 function same(p::PList, q::PList)
     lp = length(p)
     lq = length(q)
@@ -924,6 +933,11 @@ end
 # The return type depends on value of input. How to get around this ?
 # There is no integer Inf.
 # agrees with gap (except definition, use of Inf is different)
+"""
+    leastmoved(p::PList)
+
+The least element in permutation `p` that is moved.
+"""
 function leastmoved(p::PList)
     lp = length(p)
     lm = lp+1
@@ -936,6 +950,11 @@ function leastmoved(p::PList)
 end
 
 # agrees with gap
+"""
+    greatestmoved(p::PList)
+
+The greatest element in permutation `p` that is moved.
+"""
 function greatestmoved(p::PList)
     lp = length(p)
     gm = 0
@@ -947,6 +966,11 @@ function greatestmoved(p::PList)
     return gm
 end
 
+"""
+    supportsize(p::PList)
+
+The number of elements in the support of permutation `p`.
+"""
 function supportsize(p::PList)
     lp = length(p)
     count = 0
@@ -957,6 +981,12 @@ function supportsize(p::PList)
     count
 end
 
+"""
+    support(p::PList)
+
+The support of permutation `p`. That is, the elements
+that are moved under the permutation.
+"""
 function support(p::PList)
     lp = length(p)
     mov = Array{eltype(p)}(undef, 0)
@@ -967,6 +997,13 @@ function support(p::PList)
     return mov
 end
 
+"""
+    fixed(p::PList)
+
+The elements that are not moved under permutation `p`.
+
+`fixed` is the complement of `support`.
+"""
 function fixed(p::PList)
     lp = length(p)
     fixedel = Array{eltype(p)}(undef, 0)
